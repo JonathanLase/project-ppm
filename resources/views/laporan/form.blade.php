@@ -457,18 +457,22 @@
             <h3 style="margin-bottom:2px;">Status Luaran Wajib &amp; Tambahan</h3>
             <div class="sub">Luaran berikut diambil dari rencana luaran saat pengajuan proposal. Status tercapai
                 mengikuti apa yang sudah dicentang di Laporan Kemajuan (khusus jalur Simlitabkes) — untuk jalur
-                Mandiri, semua luaran otomatis tercapai. Isi tautan bukti (wajib berupa link Google Drive) untuk
-                luaran yang berstatus tercapai.</div>
+                Mandiri, semua luaran otomatis tercapai. Item yang belum dicentang di Laporan Kemajuan akan otomatis
+                tercentang begitu kamu mengisi tautan bukti Google Drive yang valid di sini. Isi tautan bukti (wajib
+                berupa link Google Drive) untuk luaran yang berstatus tercapai.</div>
 
             @forelse ($luaranList as $pl)
                 @php
                     $existing = ($laporan->luaran_tercapai ?? [])[$pl->id] ?? null;
                     $isTercapai = in_array($pl->id, $luaranTercapaiIds ?? []);
                 @endphp
-                <div class="luaran-item" data-achieved="{{ $isTercapai ? '1' : '0' }}">
+                <div class="luaran-item" data-luaran-id="{{ $pl->id }}"
+                    data-achieved="{{ $isTercapai ? '1' : '0' }}">
                     <div class="hd">
-                        {{-- Checkbox ini MENGIKUTI status di Laporan Kemajuan (jalur Simlitabkes)
-                             atau selalu tercentang untuk jalur Mandiri (tidak ada tahap Kemajuan). --}}
+                        {{-- Checkbox ini MENGIKUTI status di Laporan Kemajuan (jalur Simlitabkes),
+                             selalu tercentang untuk jalur Mandiri (tidak ada tahap Kemajuan), ATAU
+                             otomatis tercentang begitu link bukti valid diisi di Laporan Hasil ini
+                             (lihat updateKemajuanLuaran() di bawah). --}}
                         <input type="checkbox" id="chk{{ $pl->id }}" disabled {{ $isTercapai ? 'checked' : '' }}>
                         <span class="check-visual {{ $isTercapai ? 'is-checked' : '' }}"
                             id="checkVisual{{ $pl->id }}"></span>
@@ -478,10 +482,9 @@
                         @else
                             <span class="opt-tag">TAMBAHAN</span>
                         @endif
-                        @unless ($isTercapai)
-                            <span class="tag-opsional" style="background:#f1f5f9; color:#64748b;">Belum tercapai di
-                                Laporan Kemajuan</span>
-                        @endunless
+                        <span class="tag-opsional"
+                            style="background:#f1f5f9; color:#64748b; {{ $isTercapai ? 'display:none;' : '' }}"
+                            id="belumTercapai{{ $pl->id }}">Belum tercapai di Laporan Kemajuan</span>
                     </div>
                     <input type="text" form="formHasil" name="luaran[{{ $pl->id }}][link]"
                         class="drive-link-input" id="linkLuaran{{ $pl->id }}"
@@ -494,19 +497,13 @@
                 <div class="sub">Tidak ada luaran yang direncanakan pada pengajuan ini.</div>
             @endforelse
 
-            @php
-                $totalTercapai = collect($luaranList)
-                    ->filter(fn($pl) => in_array($pl->id, $luaranTercapaiIds ?? []))
-                    ->count();
-            @endphp
             <div class="field" style="margin-top:14px;">
                 <label>Kemajuan Luaran</label>
                 <div style="background:#f1f5f9; border-radius:8px; height:8px; overflow:hidden;">
                     <div id="progressBarLuaran" style="width:0%; background:#00875A; height:100%; transition:width 0.2s;">
                     </div>
                 </div>
-                <div class="sub" style="margin-top:4px;" id="progressTextLuaran">0 dari {{ $totalTercapai }} luaran
-                    terpenuhi (0%)</div>
+                <div class="sub" style="margin-top:4px;" id="progressTextLuaran">0 dari 0 luaran terpenuhi (0%)</div>
             </div>
 
             <div class="field" style="margin-top:16px;">
@@ -631,17 +628,33 @@
             document.querySelectorAll('.drive-link-input').forEach(validateDriveLink);
         });
 
-        // Progress "Kemajuan Luaran" sekarang hanya dihitung dari luaran yang memang
-        // berstatus tercapai (data-achieved="1") — sesuai centang di Laporan Kemajuan
-        // (atau semua, untuk jalur Mandiri). Luaran yang belum tercapai tidak ikut
-        // dihitung sebagai penyebut, karena memang belum wajib diisi.
+        // ===== Status "tercapai" per luaran + progress bar "Kemajuan Luaran" =====
+        // Sebuah luaran dianggap TERCAPAI kalau:
+        //   (a) sudah dicentang dosen di Laporan Kemajuan / otomatis untuk jalur Mandiri
+        //       (ditandai lewat atribut data-achieved="1" yang dikirim dari server), ATAU
+        //   (b) kolom link buktinya di Laporan Hasil ini sudah diisi dengan link
+        //       Google Drive yang valid (real-time, tanpa perlu reload halaman).
+        // Progress bar SELALU memakai TOTAL SELURUH luaran yang direncanakan sebagai
+        // penyebut (mis. 4), bukan cuma jumlah luaran yang sudah tercapai — supaya
+        // persentase mencerminkan seberapa lengkap laporan ini secara keseluruhan.
         function updateKemajuanLuaran() {
-            const achievedItems = document.querySelectorAll('.luaran-item[data-achieved="1"]');
-            const total = achievedItems.length;
+            const items = document.querySelectorAll('.luaran-item');
+            const total = items.length;
             let terisi = 0;
-            achievedItems.forEach(item => {
-                const inp = item.querySelector('input[type="text"][id^="linkLuaran"]');
-                if (inp && inp.value.trim().length > 0) terisi++;
+
+            items.forEach(item => {
+                const lid = item.dataset.luaranId;
+                const inp = document.getElementById('linkLuaran' + lid);
+                const checkVisual = document.getElementById('checkVisual' + lid);
+                const badgeBelum = document.getElementById('belumTercapai' + lid);
+
+                const originallyAchieved = item.dataset.achieved === '1';
+                const hasValidLink = !!(inp && driveLinkRegex.test(inp.value.trim()));
+                const isChecked = originallyAchieved || hasValidLink;
+
+                if (checkVisual) checkVisual.classList.toggle('is-checked', isChecked);
+                if (badgeBelum) badgeBelum.style.display = isChecked ? 'none' : '';
+                if (isChecked) terisi++;
             });
 
             const persen = total > 0 ? Math.round((terisi / total) * 100) : 0;
@@ -652,7 +665,8 @@
         }
 
         // Hitung sekali saat halaman dimuat, supaya kalau ada link yang sudah terisi
-        // sebelumnya (dari draft/reload), progress bar langsung akurat tanpa perlu diketik ulang.
+        // sebelumnya (dari draft/reload), progress bar & checklist langsung akurat
+        // tanpa perlu diketik ulang.
         document.addEventListener('DOMContentLoaded', updateKemajuanLuaran);
 
         // ===== Luaran Lainnya =====

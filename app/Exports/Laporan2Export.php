@@ -24,7 +24,10 @@ class Laporan2Export implements FromArray, WithStyles, WithTitle, ShouldAutoSize
         $rows   = [];
         $rows[] = ["LAPORAN 2 - DETAIL PENELITIAN DAN CAPAIAN LUARAN"];
         $rows[] = ["Dicetak: " . now()->format('d/m/Y H:i')];
-        $rows[] = [];
+        // ✅ FIX: baris kosong pakai [''] (bukan [] murni) — array kosong murni
+        // di-skip oleh Maatwebsite Excel sehingga semua baris di bawahnya
+        // kegeser naik 1 baris dan style header jadi salah tempat.
+        $rows[] = [''];
         // ✅ FIX: kolom "Status" dihapus supaya sama persis dengan tabel di web
         $rows[] = [
             'No',
@@ -50,6 +53,7 @@ class Laporan2Export implements FromArray, WithStyles, WithTitle, ShouldAutoSize
                 ->implode("\n");
 
             $lk = $p->laporanKemajuan;
+            $lh = $p->laporanHasil;
 
             // ✅ FIX TOTAL: luaran diusulkan diambil dari relasi $p->luaran (PengajuanLuaran -> LuaranMaster),
             //    bukan dari field yang tidak pernah ada di tabel laporan_kemajuan
@@ -61,26 +65,25 @@ class Laporan2Export implements FromArray, WithStyles, WithTitle, ShouldAutoSize
                     return $lu->opsi_dipilih ? "{$nama} ({$lu->opsi_dipilih})" : $nama;
                 })->implode("\n");
 
-            // ✅ FIX TOTAL: luaran tercapai = ID di laporan_kemajuan.luaran_tercapai
-            //    dicocokkan balik ke $p->luaran supaya dapat NAMA aslinya (bukan angka ID),
-            //    plus keterangan realisasi yang diinput dosen jika ada
-            $idTercapai = collect($lk?->luaran_tercapai ?? []);
-            $luaranTercapaiItems = $luaranSemua->whereIn('id', $idTercapai->all());
+            // ✅ FIX TOTAL: "tercapai" sekarang pakai luaranTercapaiFinal yang sudah dihitung
+            //    controller (getLaporan2Data -> resolveLuaranTercapai) — prioritas data FINAL
+            //    dari Laporan Hasil (dgn link bukti + luaran tambahan), fallback ke checklist
+            //    Laporan Kemajuan kalau Laporan Hasil belum ada
+            $luaranTercapaiFinal = $p->luaranTercapaiFinal ?? collect();
 
             $luaranTercapaiStr = '-';
-            if (!$lk) {
+            if (!$lk && !$lh) {
                 $luaranTercapaiStr = 'Belum ada laporan';
-            } elseif ($luaranTercapaiItems->isEmpty()) {
+            } elseif ($luaranTercapaiFinal->isEmpty()) {
                 $luaranTercapaiStr = 'Belum ada luaran tercapai';
             } else {
-                $luaranTercapaiStr = $luaranTercapaiItems->map(function ($lu) {
-                    $nama = $lu->luaranMaster?->nama ?? 'Luaran tanpa nama';
-                    $line = $lu->opsi_dipilih ? "{$nama} ({$lu->opsi_dipilih})" : $nama;
-                    if ($lu->realisasi?->keterangan) {
-                        $line .= ' - ' . $lu->realisasi->keterangan;
+                $luaranTercapaiStr = $luaranTercapaiFinal->map(function ($lt) {
+                    $line = $lt['opsi'] ? "{$lt['nama']} ({$lt['opsi']})" : $lt['nama'];
+                    if ($lt['tambahan']) {
+                        $line .= ' [Luaran Tambahan]';
                     }
-                    if ($lu->realisasi?->link_bukti) {
-                        $line .= ' [' . $lu->realisasi->link_bukti . ']';
+                    if (!empty($lt['link'])) {
+                        $line .= ' - Bukti: ' . $lt['link'];
                     }
                     return $line;
                 })->implode("\n");

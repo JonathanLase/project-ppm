@@ -1213,6 +1213,18 @@
             vertical-align: middle;
         }
 
+        .luaran-tambahan-badge {
+            display: inline-block;
+            font-size: 8.5px;
+            font-weight: 800;
+            color: #6d28d9;
+            background: #f5f3ff;
+            border-radius: 5px;
+            padding: 1px 6px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
         .pg-wrap {
             padding: 16px 22px;
             border-top: 1px solid var(--line);
@@ -1809,11 +1821,14 @@
                                 @foreach ($data2 as $i => $p)
                                     @php
                                         $lk = $p->laporanKemajuan;
+                                        $lh = $p->laporanHasil;
                                         // Semua luaran yang diusulkan di proposal (nama dari luaran_master + opsi yang dipilih)
                                         $luaranDiusulkan = $p->luaran ?? collect();
-                                        // ID pengajuan_luaran yang ditandai "tercapai" pada laporan kemajuan
-                                        $idTercapai = collect($lk?->luaran_tercapai ?? []);
-                                        $luaranTercapai = $luaranDiusulkan->whereIn('id', $idTercapai->all());
+                                        // ✅ FIX: sumber "tercapai" sekarang dari resolveLuaranTercapai() di controller —
+                                        // prioritas Laporan Hasil (final + link bukti + luaran tambahan), fallback ke
+                                        // checklist Laporan Kemajuan kalau Laporan Hasil belum ada
+                                        $luaranTercapaiFinal = $p->luaranTercapaiFinal ?? collect();
+                                        $idTercapaiSet = $luaranTercapaiFinal->pluck('id')->filter()->all();
                                         $tval = $p->{$kolomTahun} ?? ($p->created_at?->year ?? '-');
                                     @endphp
                                     <tr>
@@ -1891,10 +1906,10 @@
             @if ($luaranDiusulkan->isNotEmpty())
                 <div class="luaran-list">
                     @foreach ($luaranDiusulkan as $lu)
-                        <div class="luaran-item {{ $idTercapai->contains($lu->id) ? 'is-tercapai' : '' }}">
+                        <div class="luaran-item {{ in_array($lu->id, $idTercapaiSet) ? 'is-tercapai' : '' }}">
                             <div class="luaran-item-name">
                                 {{ $lu->luaranMaster?->nama ?? 'Luaran tanpa nama' }}
-                                @if ($idTercapai->contains($lu->id))
+                                @if (in_array($lu->id, $idTercapaiSet))
                                     <span class="luaran-tercapai-badge">Tercapai</span>
                                 @endif
                             </div>
@@ -1909,30 +1924,30 @@
             @endif
         </td>
 
-        {{-- ✅ LUARAN TERCAPAI — hanya yang ditandai tercapai, lengkap dengan info realisasi dari dosen --}}
+        {{-- ✅ LUARAN TERCAPAI — sumber utama Laporan Hasil (dgn link bukti) + luaran tambahan,
+                                         fallback ke checklist Laporan Kemajuan kalau Laporan Hasil belum ada --}}
         <td>
-            @if (!$lk)
+            @if (!$lk && !$lh)
                 <span class="lb-empty"><i class="bi bi-dash-circle me-1"></i>Belum ada laporan</span>
-            @elseif($luaranTercapai->isEmpty())
+            @elseif($luaranTercapaiFinal->isEmpty())
                 <span class="lb-empty"><i class="bi bi-hourglass-split me-1" style="color:#f59e0b;"></i>Belum ada luaran
                     tercapai</span>
             @else
                 <div class="luaran-list">
-                    @foreach ($luaranTercapai as $lu)
+                    @foreach ($luaranTercapaiFinal as $lt)
                         <div class="luaran-item is-tercapai">
-                            <div class="luaran-item-name">{{ $lu->luaranMaster?->nama ?? 'Luaran tanpa nama' }}</div>
-                            @if ($lu->opsi_dipilih)
-                                <span class="luaran-item-opsi">{{ $lu->opsi_dipilih }}</span>
+                            <div class="luaran-item-name">
+                                {{ $lt['nama'] }}
+                                @if ($lt['tambahan'])
+                                    <span class="luaran-tambahan-badge">Tambahan</span>
+                                @endif
+                            </div>
+                            @if ($lt['opsi'])
+                                <span class="luaran-item-opsi">{{ $lt['opsi'] }}</span>
                             @endif
-                            @if ($lu->realisasi)
+                            @if (!empty($lt['link']))
                                 <div class="luaran-item-real">
-                                    @if ($lu->realisasi->keterangan)
-                                        {{ Str::limit($lu->realisasi->keterangan, 90) }}<br>
-                                    @endif
-                                    @if ($lu->realisasi->link_bukti)
-                                        <a href="{{ $lu->realisasi->link_bukti }}" target="_blank" rel="noopener">Lihat
-                                            bukti</a>
-                                    @endif
+                                    <a href="{{ $lt['link'] }}" target="_blank" rel="noopener">Lihat bukti</a>
                                 </div>
                             @endif
                         </div>

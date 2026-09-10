@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pengajuan;
 use App\Models\Pegawai;
 use App\Models\Skema;
+use App\Models\LuaranMaster;
 use App\Exports\Laporan1Export;
 use App\Exports\Laporan2Export;
 use Illuminate\Http\Request;
@@ -101,6 +102,14 @@ class LaporanAdminController extends Controller
             ->orderByDesc($kolomTahun === 'created_at' ? 'created_at' : $kolomTahun);
 
         $data2 = $query2->paginate(15)->withQueryString();
+
+        // ✅ FIX: hitung "Luaran Tercapai" yang benar untuk tiap baris — mengutamakan
+        // data final dari Laporan Hasil (lengkap dgn link bukti + luaran tambahan),
+        // dengan fallback ke checklist Laporan Kemajuan kalau Laporan Hasil belum ada.
+        $data2->getCollection()->transform(function ($p) {
+            $p->luaranTercapaiFinal = $this->resolveLuaranTercapai($p);
+            return $p;
+        });
 
         // Summary laporan 2
         $sum2Kegiatan = $data2->total();
@@ -294,7 +303,7 @@ class LaporanAdminController extends Controller
     {
         $kolomTahun = $filters['kolomTahun'] ?? $this->getKolomTahun();
 
-        return Pengajuan::with([
+        $result = Pengajuan::with([
                 'pegawai',
                 'anggotas.pegawai',
                 'skema',
@@ -317,6 +326,73 @@ class LaporanAdminController extends Controller
             ->when($filters['skema_id'] ?? null, fn($q) => $q->where('skema_id', $filters['skema_id']))
             ->orderByDesc('created_at')
             ->get();
+
+        // ✅ FIX: sama seperti di index() — pakai data final dari Laporan Hasil
+        // (bukan cuma checklist Laporan Kemajuan) supaya Excel/PDF konsisten dgn tabel
+        return $result->map(function ($p) {
+            $p->luaranTercapaiFinal = $this->resolveLuaranTercapai($p);
+            return $p;
+        });
+    }
+
+    /**
+     * Gabungkan status "Luaran Tercapai" dari sumber yang tepat:
+     *  1) Kalau Laporan Hasil sudah ada & punya data — itu sumber FINAL (sudah
+     *     dilengkapi link bukti), plus ikutkan "Luaran Lainnya" yang diketik
+     *     manual dosen di luar rencana awal proposal.
+     *  2) Kalau belum ada Laporan Hasil — fallback ke checklist di Laporan
+     *     Kemajuan (baru status "sudah dicentang", belum tentu ada bukti link).
+     */
+    private function resolveLuaranTercapai(Pengajuan $p): \Illuminate\Support\Collection
+    {
+        $luaranSemua = $p->luaran ?? collect();
+        $lh = $p->laporanHasil;
+        $lk = $p->laporanKemajuan;
+
+        $out = collect();
+
+        if ($lh && !empty($lh->luaran_tercapai)) {
+            foreach ($lh->luaran_tercapai as $pengajuanLuaranId => $info) {
+                $link = trim($info['link'] ?? '');
+                if ($link === '') {
+                    continue; // baris ada tapi belum diisi link -> belum benar-benar tercapai
+                }
+                $lu = $luaranSemua->firstWhere('id', (int) $pengajuanLuaranId);
+                $out->push([
+                    'id'       => $lu?->id,
+                    'nama'     => $lu?->luaranMaster?->nama ?? 'Luaran tanpa nama',
+                    'opsi'     => $lu?->opsi_dipilih,
+                    'link'     => $link,
+                    'tambahan' => false,
+                ]);
+            }
+
+            foreach ($lh->luaran_tambahan_lain ?? [] as $item) {
+                $nama = $item['nama_custom']
+                    ?? optional(LuaranMaster::find($item['luaran_master_id'] ?? null))->nama
+                    ?? 'Luaran tambahan';
+                $out->push([
+                    'id'       => null,
+                    'nama'     => $nama,
+                    'opsi'     => null,
+                    'link'     => $item['link'] ?? null,
+                    'tambahan' => true,
+                ]);
+            }
+        } elseif ($lk && !empty($lk->luaran_tercapai)) {
+            $idTercapai = collect($lk->luaran_tercapai);
+            foreach ($luaranSemua->whereIn('id', $idTercapai->all()) as $lu) {
+                $out->push([
+                    'id'       => $lu->id,
+                    'nama'     => $lu->luaranMaster?->nama ?? 'Luaran tanpa nama',
+                    'opsi'     => $lu->opsi_dipilih,
+                    'link'     => null,
+                    'tambahan' => false,
+                ]);
+            }
+        }
+
+        return $out;
     }
 
     public function getTahunList(string $kolomTahun = ''): array

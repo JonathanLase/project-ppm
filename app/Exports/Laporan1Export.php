@@ -43,7 +43,10 @@ class Laporan1Export implements FromArray, WithStyles, WithTitle, ShouldAutoSize
         $rows[] = ["LAPORAN 1 - REKAPITULASI PENELITIAN PER JURUSAN"];
         $rows[] = [$tahunLabel . $jenisLabel . $jurusanLabel];
         $rows[] = ["Dicetak: " . now()->format('d/m/Y H:i')];
-        $rows[] = [];
+        // ✅ FIX: baris kosong pakai [''] (bukan [] murni) — array kosong murni
+        // di-skip oleh Maatwebsite Excel sehingga semua baris di bawahnya
+        // kegeser naik 1 baris dan style header jadi salah tempat.
+        $rows[] = [''];
         $rows[] = [
             'No',
             'Jurusan',

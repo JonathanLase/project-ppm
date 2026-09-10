@@ -252,16 +252,28 @@ class LaporanController extends Controller
         $laporan = $pengajuan->laporanHasil;
         $readonly = $laporan && in_array($laporan->status, ['proses', 'disetujui']);
 
-        // Status "tercapai" untuk tiap luaran di Laporan Hasil TIDAK lagi otomatis
-        // semua tercentang. Untuk jalur Simlitabkes, ikuti persis apa yang sudah
-        // dicentang dosen di Laporan Kemajuan (luaran_tercapai di sana berupa
-        // array flat berisi id luaran yang dicentang lewat checkbox biasa).
+        // Status "tercapai" untuk tiap luaran di Laporan Hasil mengikuti dua sumber:
+        //   (a) untuk jalur Simlitabkes: apa yang sudah dicentang dosen di Laporan
+        //       Kemajuan (luaran_tercapai di sana berupa array flat id luaran), DAN
+        //   (b) luaran yang link bukti-nya sudah pernah diisi & tersimpan sebelumnya
+        //       di Laporan Hasil ini sendiri (draft/reload) — supaya auto-ceklis dari
+        //       pengisian link tetap konsisten setelah halaman dibuka ulang, bukan
+        //       cuma efek visual sesaat di browser (lihat updateKemajuanLuaran() di
+        //       laporan/form.blade.php untuk bagian real-time di sisi client).
         // Untuk jalur Mandiri, tidak ada tahap Laporan Kemajuan sama sekali,
         // jadi semua luaran yang direncanakan dianggap tercapai otomatis.
         if ($pengajuan->jalur === 'mandiri') {
             $luaranTercapaiIds = $pengajuan->luaran->pluck('id')->all();
         } else {
-            $luaranTercapaiIds = $pengajuan->laporanKemajuan->luaran_tercapai ?? [];
+            $dariKemajuan = $pengajuan->laporanKemajuan->luaran_tercapai ?? [];
+
+            $dariLinkTerisi = collect(optional($laporan)->luaran_tercapai ?? [])
+                ->filter(fn ($item) => trim($item['link'] ?? '') !== '')
+                ->keys()
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $luaranTercapaiIds = array_values(array_unique(array_merge($dariKemajuan, $dariLinkTerisi)));
         }
 
         // Daftar luaran master di luar yang sudah dipilih saat pengajuan proposal —

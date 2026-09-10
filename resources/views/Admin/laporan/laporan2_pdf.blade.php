@@ -260,15 +260,18 @@
             @forelse($data as $p)
                 @php
                     $lk = $p->laporanKemajuan;
+                    $lh = $p->laporanHasil;
 
                     // ✅ FIX TOTAL: luaran diusulkan diambil dari relasi $p->luaran
                     // (PengajuanLuaran -> LuaranMaster), bukan dari field yang tidak ada
                     $luaranSemua = $p->luaran ?? collect();
 
-                    // ✅ FIX TOTAL: cocokkan ID di laporan_kemajuan.luaran_tercapai
-                    // ke koleksi luaran supaya dapat nama aslinya
-                    $idTercapai = collect($lk?->luaran_tercapai ?? []);
-                    $luaranTercapaiItems = $luaranSemua->whereIn('id', $idTercapai->all());
+                    // ✅ FIX TOTAL: "tercapai" sekarang pakai luaranTercapaiFinal yang sudah
+                    // dihitung controller (getLaporan2Data -> resolveLuaranTercapai) — prioritas
+                    // data FINAL dari Laporan Hasil (dgn link bukti + luaran tambahan), fallback
+                    // ke checklist Laporan Kemajuan kalau Laporan Hasil belum ada
+                    $luaranTercapaiFinal = $p->luaranTercapaiFinal ?? collect();
+                    $idTercapaiSet = $luaranTercapaiFinal->pluck('id')->filter()->all();
 
                     // Nilai tahun
                     $tahunVal = '-';
@@ -315,7 +318,7 @@
                     {{-- ✅ FIX TOTAL: Luaran Diusulkan — daftar nama luaran asli dari proposal --}}
                     <td>
                         @forelse($luaranSemua as $lu)
-                            <div class="luaran-card {{ $idTercapai->contains($lu->id) ? 'tercapai' : '' }}">
+                            <div class="luaran-card {{ in_array($lu->id, $idTercapaiSet) ? 'tercapai' : '' }}">
                                 <b>{{ $lu->luaranMaster?->nama ?? 'Luaran tanpa nama' }}</b>
                                 @if ($lu->opsi_dipilih)
                                     <span class="opsi">{{ $lu->opsi_dipilih }}</span>
@@ -326,28 +329,24 @@
                         @endforelse
                     </td>
 
-                    {{-- ✅ FIX TOTAL: Luaran Tercapai — nama asli + info realisasi dari dosen --}}
+                    {{-- ✅ FIX TOTAL: Luaran Tercapai — sumber final Laporan Hasil (link bukti + luaran tambahan) --}}
                     <td>
-                        @if (!$lk)
+                        @if (!$lk && !$lh)
                             <span class="text-muted">Belum ada laporan</span>
-                        @elseif($luaranTercapaiItems->isEmpty())
+                        @elseif($luaranTercapaiFinal->isEmpty())
                             <span class="text-muted">Belum ada luaran tercapai</span>
                         @else
-                            @foreach ($luaranTercapaiItems as $lu)
+                            @foreach ($luaranTercapaiFinal as $lt)
                                 <div class="luaran-card tercapai">
-                                    <b>{{ $lu->luaranMaster?->nama ?? 'Luaran tanpa nama' }}</b>
-                                    @if ($lu->opsi_dipilih)
-                                        <span class="opsi">{{ $lu->opsi_dipilih }}</span>
+                                    <b>{{ $lt['nama'] }}</b>
+                                    @if ($lt['tambahan'])
+                                        <span class="opsi" style="border-color:#c4b5fd;color:#6d28d9;">Tambahan</span>
                                     @endif
-                                    @if ($lu->realisasi)
-                                        <span class="real">
-                                            @if ($lu->realisasi->keterangan)
-                                                {{ $lu->realisasi->keterangan }}
-                                            @endif
-                                            @if ($lu->realisasi->link_bukti)
-                                                <br>Bukti: {{ $lu->realisasi->link_bukti }}
-                                            @endif
-                                        </span>
+                                    @if ($lt['opsi'])
+                                        <span class="opsi">{{ $lt['opsi'] }}</span>
+                                    @endif
+                                    @if (!empty($lt['link']))
+                                        <span class="real">Bukti: {{ $lt['link'] }}</span>
                                     @endif
                                 </div>
                             @endforeach
