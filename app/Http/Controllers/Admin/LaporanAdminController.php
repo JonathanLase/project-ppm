@@ -84,7 +84,10 @@ class LaporanAdminController extends Controller
 
         $query2 = Pengajuan::with([
                 'pegawai', 'anggotas.pegawai',
-                'skema', 'laporanKemajuan', 'laporanHasil', 'luaran',
+                'skema', 'laporanKemajuan', 'laporanHasil',
+                // ✅ FIX: load nama luaran (luaranMaster) & detail realisasi yang diinput dosen
+                'luaran.luaranMaster',
+                'luaran.realisasi',
             ])
             ->when($filters2['tahun2'] ?? null, function ($q) use ($filters2, $kolomTahun) {
                 $kolomTahun === 'created_at'
@@ -161,7 +164,8 @@ class LaporanAdminController extends Controller
         $jurusan    = $request->get('jurusan1'); // ✅ NEW
         $rekapJurusan = $this->getLaporan1DataFiltered($tahun, $jenis, $kolomTahun, $jurusan);
 
-        $pdf = Pdf::loadView('admin.laporan.laporan1_pdf', compact('rekapJurusan', 'tahun'))
+        // ✅ FIX: ikutkan jenis & jurusan supaya keterangan filter di PDF akurat
+        $pdf = Pdf::loadView('admin.laporan.laporan1_pdf', compact('rekapJurusan', 'tahun', 'jenis', 'jurusan'))
             ->setPaper('a4', 'landscape');
 
         return $pdf->download('laporan1.pdf');
@@ -296,7 +300,9 @@ class LaporanAdminController extends Controller
                 'skema',
                 'laporanKemajuan',
                 'laporanHasil',
-                'luaran',
+                // ✅ FIX: load nama luaran (luaranMaster) & detail realisasi yang diinput dosen
+                'luaran.luaranMaster',
+                'luaran.realisasi',
             ])
             ->when($filters['tahun'] ?? null, function ($q) use ($filters, $kolomTahun) {
                 if ($kolomTahun === 'created_at') {

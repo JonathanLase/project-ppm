@@ -8,6 +8,7 @@ use App\Models\LuaranMaster;
 use App\Models\Notification;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
+use App\Rules\GoogleDriveLink;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Storage;
 class LaporanController extends Controller
 {
     /* ===================== LAPORAN KEMAJUAN ===================== */
+    /* Tidak ada input link di Laporan Kemajuan (hanya upload PDF + checkbox
+     * luaran_tercapai), jadi tidak perlu validasi GoogleDriveLink di sini. */
 
     public function kemajuan()
     {
@@ -90,13 +93,13 @@ class LaporanController extends Controller
             'kendala' => 'nullable|string',
             'rencana_berikutnya' => 'nullable|string',
             'luaran_tercapai' => 'nullable|array',
-            'file' => 'nullable|file|mimes:pdf|max:2048',
+            'file' => 'nullable|file|mimes:pdf|max:5120',
             'dokumentasi.*' => 'nullable|image|max:5120',
         ];
         if ($isKirim) {
             $rules['file'] = LaporanKemajuan::where('pengajuan_id', $pengajuan->id)->whereNotNull('file_path')->exists()
-                ? 'nullable|file|mimes:pdf|max:2048'
-                : 'required|file|mimes:pdf|max:2048';
+                ? 'nullable|file|mimes:pdf|max:5120'
+                : 'required|file|mimes:pdf|max:5120';
         }
 
         $data = $request->validate($rules);
@@ -245,9 +248,21 @@ class LaporanController extends Controller
             return redirect()->route('laporan.index', $tipe)->with('error', 'Pengajuan ini belum berada di tahap Laporan Hasil.');
         }
 
-        $pengajuan->load('luaran.luaranMaster');
+        $pengajuan->load('luaran.luaranMaster', 'laporanKemajuan');
         $laporan = $pengajuan->laporanHasil;
         $readonly = $laporan && in_array($laporan->status, ['proses', 'disetujui']);
+
+        // Status "tercapai" untuk tiap luaran di Laporan Hasil TIDAK lagi otomatis
+        // semua tercentang. Untuk jalur Simlitabkes, ikuti persis apa yang sudah
+        // dicentang dosen di Laporan Kemajuan (luaran_tercapai di sana berupa
+        // array flat berisi id luaran yang dicentang lewat checkbox biasa).
+        // Untuk jalur Mandiri, tidak ada tahap Laporan Kemajuan sama sekali,
+        // jadi semua luaran yang direncanakan dianggap tercapai otomatis.
+        if ($pengajuan->jalur === 'mandiri') {
+            $luaranTercapaiIds = $pengajuan->luaran->pluck('id')->all();
+        } else {
+            $luaranTercapaiIds = $pengajuan->laporanKemajuan->luaran_tercapai ?? [];
+        }
 
         // Daftar luaran master di luar yang sudah dipilih saat pengajuan proposal —
         // dipakai untuk fitur "Luaran Lainnya" supaya dosen bisa menambahkan bukti
@@ -263,6 +278,7 @@ class LaporanController extends Controller
             'pengajuan' => $pengajuan,
             'laporan' => $laporan,
             'luaranList' => $pengajuan->luaran,
+            'luaranTercapaiIds' => $luaranTercapaiIds,
             'luaranMasterLain' => $luaranMasterLain,
             'readonly' => $readonly,
             'judulHalaman' => 'Laporan Hasil',
@@ -275,11 +291,16 @@ class LaporanController extends Controller
      * Link Inovasi Produk dan No. SK wajib diisi — tapi hanya divalidasi wajib
      * saat action=kirim (draft boleh belum lengkap).
      *
-     * Semua luaran yang sudah dipilih saat pengajuan proposal (wajib & tambahan)
-     * dianggap tercapai secara default begitu laporan hasil dikirim — checkbox
-     * status luaran selalu tercentang di tampilan dan tidak bisa diubah dosen.
-     * Namun link bukti untuk setiap luaran itu tetap WAJIB diisi sebelum laporan
-     * bisa dikirim (divalidasi manual di bawah karena field-nya dinamis per luaran).
+     * Semua field link (link bukti luaran, link luaran tambahan, dan link
+     * inovasi/produk) divalidasi harus berupa link Google Drive/Docs yang
+     * valid (lihat App\Rules\GoogleDriveLink) supaya dosen tidak asal input
+     * link sembarangan.
+     *
+     * Status "tercapai" untuk tiap luaran TIDAK lagi otomatis semua tercentang.
+     * Untuk jalur Simlitabkes, hanya luaran yang sudah dicentang di Laporan
+     * Kemajuan yang wajib diisi link-nya di sini; yang belum tercapai di
+     * Kemajuan boleh dikosongkan. Untuk jalur Mandiri (tidak ada tahap
+     * Kemajuan), semua luaran yang direncanakan tetap wajib diisi link-nya.
      *
      * Untuk "Luaran Lainnya", dosen bisa pilih judul dari $luaranMasterLain ATAU
      * pilih opsi "lainnya" di dropdown lalu ketik judul manual sendiri (nama_custom).
@@ -306,7 +327,7 @@ class LaporanController extends Controller
         $rules = [
             'ringkasan_hasil' => 'nullable|string',
             'luaran' => 'nullable|array',
-            'luaran.*.link' => 'nullable|string|max:500',
+            'luaran.*.link' => ['nullable', 'string', 'max:500', new GoogleDriveLink],
             'luaran_lain' => 'nullable|array',
             // "lainnya" adalah kode khusus untuk input manual, jadi TIDAK boleh
             // divalidasi exists:luaran_masters,id (bukan ID asli tabel itu).
@@ -320,25 +341,25 @@ class LaporanController extends Controller
             }],
             // nama_custom wajib diisi HANYA kalau luaran_master_id di baris yang sama = "lainnya".
             'luaran_lain.*.nama_custom' => 'nullable|required_if:luaran_lain.*.luaran_master_id,lainnya|string|max:255',
-            'luaran_lain.*.link' => 'nullable|string|max:500',
-            'file' => 'nullable|file|mimes:pdf|max:2048',
-            'bukti_pajak' => 'nullable|file|mimes:pdf|max:2048',
-            'berita_acara' => 'nullable|file|mimes:pdf|max:2048',
+            'luaran_lain.*.link' => ['nullable', 'string', 'max:500', new GoogleDriveLink],
+            'file' => 'nullable|file|mimes:pdf|max:5120',
+            'bukti_pajak' => 'nullable|file|mimes:pdf|max:5120',
+            'berita_acara' => 'nullable|file|mimes:pdf|max:5120',
             'dokumentasi.*' => 'nullable|image|max:5120',
         ];
 
         if ($isKirim) {
             $rules['file'] = ($existing && $existing->file_path)
-                ? 'nullable|file|mimes:pdf|max:2048'
-                : 'required|file|mimes:pdf|max:2048';
+                ? 'nullable|file|mimes:pdf|max:5120'
+                : 'required|file|mimes:pdf|max:5120';
             $rules['kwitansi'] = ($existing && $existing->kwitansi_path)
-                ? 'nullable|file|mimes:pdf|max:2048'
-                : 'required|file|mimes:pdf|max:2048';
-            $rules['link_inovasi_produk'] = 'required|string|max:255';
+                ? 'nullable|file|mimes:pdf|max:5120'
+                : 'required|file|mimes:pdf|max:5120';
+            $rules['link_inovasi_produk'] = ['required', 'string', 'max:255', new GoogleDriveLink];
             $rules['no_sk'] = 'required|string|max:255';
         } else {
-            $rules['kwitansi'] = 'nullable|file|mimes:pdf|max:2048';
-            $rules['link_inovasi_produk'] = 'nullable|string|max:255';
+            $rules['kwitansi'] = 'nullable|file|mimes:pdf|max:5120';
+            $rules['link_inovasi_produk'] = ['nullable', 'string', 'max:255', new GoogleDriveLink];
             $rules['no_sk'] = 'nullable|string|max:255';
         }
 
@@ -346,12 +367,26 @@ class LaporanController extends Controller
             'luaran_lain.*.nama_custom.required_if' => 'Judul luaran manual wajib diisi untuk baris "Lainnya".',
         ]);
 
-        // Wajib isi link bukti untuk SEMUA luaran yang sudah dipilih saat proposal
-        // (wajib maupun tambahan) sebelum laporan bisa dikirim — divalidasi manual
-        // karena nama field-nya dinamis per ID luaran (luaran[123][link], dst).
+        // Luaran yang WAJIB diisi link-nya adalah luaran yang berstatus tercapai —
+        // untuk Simlitabkes ikut apa yang dicentang di Laporan Kemajuan, untuk
+        // Mandiri semua luaran yang direncanakan (tidak ada tahap Kemajuan).
+        $pengajuan->loadMissing('luaran.luaranMaster', 'laporanKemajuan');
+        if ($pengajuan->jalur === 'mandiri') {
+            $luaranWajibDiisiIds = $pengajuan->luaran->pluck('id')->all();
+        } else {
+            $luaranWajibDiisiIds = $pengajuan->laporanKemajuan->luaran_tercapai ?? [];
+        }
+
+        // Wajib isi link bukti hanya untuk luaran yang berstatus tercapai di atas
+        // sebelum laporan bisa dikirim — divalidasi manual karena nama field-nya
+        // dinamis per ID luaran (luaran[123][link], dst). Validasi format Google
+        // Drive untuk link-link ini sudah ditangani oleh rule 'luaran.*.link' di atas;
+        // di sini hanya cek kosong/tidaknya.
         if ($isKirim) {
-            $pengajuan->loadMissing('luaran.luaranMaster');
             foreach ($pengajuan->luaran as $pl) {
+                if (!in_array($pl->id, $luaranWajibDiisiIds)) {
+                    continue; // belum tercapai di Laporan Kemajuan — tidak wajib
+                }
                 $link = trim($request->input("luaran.{$pl->id}.link", ''));
                 if ($link === '') {
                     return back()
@@ -364,8 +399,8 @@ class LaporanController extends Controller
             }
         }
 
-        // Semua luaran yang direncanakan di proposal dianggap tercapai — simpan
-        // entri untuk setiap luaran (link boleh kosong saat masih draft).
+        // Simpan entri untuk setiap luaran yang direncanakan — link boleh kosong
+        // untuk luaran yang belum tercapai di Laporan Kemajuan (tidak wajib diisi).
         $luaranTercapai = [];
         foreach ($pengajuan->luaran as $pl) {
             $link = trim($request->input("luaran.{$pl->id}.link", ''));
@@ -405,9 +440,16 @@ class LaporanController extends Controller
             }
         }
 
-        // Semua luaran rencana dianggap tercapai (100%) begitu laporan dikirim.
-        $totalLuaran = $pengajuan->luaran()->count();
-        $persentaseOtomatis = $totalLuaran > 0 ? 100 : 0;
+        // Persentase dihitung dari luaran yang wajib diisi (tercapai di Kemajuan,
+        // atau semua untuk jalur Mandiri) yang link-nya benar-benar sudah terisi.
+        $totalWajibDiisi = count($luaranWajibDiisiIds);
+        $jumlahTerisi = 0;
+        foreach ($luaranWajibDiisiIds as $lid) {
+            if (!empty($luaranTercapai[$lid]['link'] ?? '')) {
+                $jumlahTerisi++;
+            }
+        }
+        $persentaseOtomatis = $totalWajibDiisi > 0 ? (int) round($jumlahTerisi / $totalWajibDiisi * 100) : 0;
 
         $laporan = LaporanHasil::firstOrNew(['pengajuan_id' => $pengajuan->id]);
         $laporan->pengajuan_id = $pengajuan->id;

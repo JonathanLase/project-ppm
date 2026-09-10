@@ -25,6 +25,7 @@ class Laporan2Export implements FromArray, WithStyles, WithTitle, ShouldAutoSize
         $rows[] = ["LAPORAN 2 - DETAIL PENELITIAN DAN CAPAIAN LUARAN"];
         $rows[] = ["Dicetak: " . now()->format('d/m/Y H:i')];
         $rows[] = [];
+        // ✅ FIX: kolom "Status" dihapus supaya sama persis dengan tabel di web
         $rows[] = [
             'No',
             'Tahun',
@@ -37,54 +38,52 @@ class Laporan2Export implements FromArray, WithStyles, WithTitle, ShouldAutoSize
             'Skema',
             'Luaran Diusulkan',
             'Luaran Tercapai',
-            'Status',
         ];
 
         $no         = 1;
         $kolomTahun = $this->filters['kolomTahun'] ?? 'tahun_pengajuan';
 
         foreach ($data as $p) {
-            // Anggota tim
-            $anggotaNama = $p->anggotas
-                ->map(fn($a) => $a->pegawai?->nama ?? '-')
-                ->filter()
-                ->implode(', ');
+            // ✅ FIX: anggota tim sekarang ikut menampilkan jurusan, satu per baris
+            $anggotaStr = $p->anggotas
+                ->map(fn($a) => trim(($a->pegawai?->nama ?? '-') . ' (' . ($a->pegawai?->jurusan ?? '-') . ')'))
+                ->implode("\n");
 
-            // Helper konversi luaran ke string
-            $toLuaranStr = function ($val): string {
-                if (is_null($val))   return '-';
-                if (is_string($val)) return $val;
-                if (is_array($val)) {
-                    return implode(', ', array_map(function ($item) {
-                        if (is_array($item)) {
-                            return $item['nama']
-                                ?? $item['jenis']
-                                ?? $item['judul']
-                                ?? json_encode($item);
-                        }
-                        return (string) $item;
-                    }, $val));
-                }
-                return (string) $val;
-            };
+            $lk = $p->laporanKemajuan;
 
-            $lk              = $p->laporanKemajuan;
-            $luaranDiusulkan = '-';
-            $luaranTercapai  = '-';
+            // ✅ FIX TOTAL: luaran diusulkan diambil dari relasi $p->luaran (PengajuanLuaran -> LuaranMaster),
+            //    bukan dari field yang tidak pernah ada di tabel laporan_kemajuan
+            $luaranSemua = $p->luaran ?? collect();
+            $luaranDiusulkanStr = $luaranSemua->isEmpty()
+                ? '-'
+                : $luaranSemua->map(function ($lu) {
+                    $nama = $lu->luaranMaster?->nama ?? 'Luaran tanpa nama';
+                    return $lu->opsi_dipilih ? "{$nama} ({$lu->opsi_dipilih})" : $nama;
+                })->implode("\n");
 
-            if ($lk) {
-                $luaranDiusulkan = $toLuaranStr(
-                    $lk->luaran_diusulkan
-                    ?? $lk->target_luaran
-                    ?? $lk->luaran
-                    ?? null
-                );
-                $luaranTercapai = $toLuaranStr(
-                    $lk->luaran_tercapai
-                    ?? $lk->capaian_luaran
-                    ?? $lk->capaian
-                    ?? null
-                );
+            // ✅ FIX TOTAL: luaran tercapai = ID di laporan_kemajuan.luaran_tercapai
+            //    dicocokkan balik ke $p->luaran supaya dapat NAMA aslinya (bukan angka ID),
+            //    plus keterangan realisasi yang diinput dosen jika ada
+            $idTercapai = collect($lk?->luaran_tercapai ?? []);
+            $luaranTercapaiItems = $luaranSemua->whereIn('id', $idTercapai->all());
+
+            $luaranTercapaiStr = '-';
+            if (!$lk) {
+                $luaranTercapaiStr = 'Belum ada laporan';
+            } elseif ($luaranTercapaiItems->isEmpty()) {
+                $luaranTercapaiStr = 'Belum ada luaran tercapai';
+            } else {
+                $luaranTercapaiStr = $luaranTercapaiItems->map(function ($lu) {
+                    $nama = $lu->luaranMaster?->nama ?? 'Luaran tanpa nama';
+                    $line = $lu->opsi_dipilih ? "{$nama} ({$lu->opsi_dipilih})" : $nama;
+                    if ($lu->realisasi?->keterangan) {
+                        $line .= ' - ' . $lu->realisasi->keterangan;
+                    }
+                    if ($lu->realisasi?->link_bukti) {
+                        $line .= ' [' . $lu->realisasi->link_bukti . ']';
+                    }
+                    return $line;
+                })->implode("\n");
             }
 
             // Nilai tahun
@@ -96,29 +95,27 @@ class Laporan2Export implements FromArray, WithStyles, WithTitle, ShouldAutoSize
                 $p->judul,
                 $p->pegawai?->nama ?? '-',
                 $p->pegawai?->jurusan ?? '-',
-                $anggotaNama ?: '-',
+                $anggotaStr ?: '-',
                 ucfirst($p->jenis ?? '-'),
                 ucfirst($p->jalur ?? '-'),
                 $p->skema?->nama ?? '-',
-                $luaranDiusulkan,
-                $luaranTercapai,
-                ucfirst(str_replace('_', ' ', $p->status ?? '-')),
+                $luaranDiusulkanStr,
+                $luaranTercapaiStr,
             ];
         }
 
         return $rows;
     }
 
-    // ✅ Return type harus ?array bukan void
     public function styles(Worksheet $sheet): ?array
     {
         $lastRow = $sheet->getHighestRow();
 
-        // Merge title
-        $sheet->mergeCells('A1:L1');
-        $sheet->mergeCells('A2:L2');
+        // ✅ FIX: merge & border sekarang sampai kolom K (bukan L), karena kolom
+        //    Status sudah dihapus supaya sesuai dengan tabel di web
+        $sheet->mergeCells('A1:K1');
+        $sheet->mergeCells('A2:K2');
 
-        // Style judul
         $sheet->getStyle('A1')->applyFromArray([
             'font' => [
                 'bold'  => true,
@@ -131,7 +128,7 @@ class Laporan2Export implements FromArray, WithStyles, WithTitle, ShouldAutoSize
         ]);
 
         // Style header tabel (baris 4)
-        $sheet->getStyle('A4:L4')->applyFromArray([
+        $sheet->getStyle('A4:K4')->applyFromArray([
             'font' => [
                 'bold'  => true,
                 'color' => ['rgb' => 'FFFFFF'],
@@ -147,7 +144,7 @@ class Laporan2Export implements FromArray, WithStyles, WithTitle, ShouldAutoSize
 
         // Border
         if ($lastRow >= 4) {
-            $sheet->getStyle("A4:L{$lastRow}")->applyFromArray([
+            $sheet->getStyle("A4:K{$lastRow}")->applyFromArray([
                 'borders' => [
                     'allBorders' => [
                         'borderStyle' => Border::BORDER_THIN,
@@ -157,22 +154,26 @@ class Laporan2Export implements FromArray, WithStyles, WithTitle, ShouldAutoSize
             ]);
         }
 
-        // Wrap text kolom panjang
+        // Wrap text + rata atas untuk kolom yang isinya bisa banyak baris
         if ($lastRow >= 5) {
-            $sheet->getStyle("C5:L{$lastRow}")
-                ->getAlignment()
-                ->setWrapText(true);
+            $sheet->getStyle("C5:K{$lastRow}")->applyFromArray([
+                'alignment' => [
+                    'wrapText' => true,
+                    'vertical' => Alignment::VERTICAL_TOP,
+                ],
+            ]);
         }
 
         // Lebar kolom manual
         $sheet->getColumnDimension('C')->setWidth(40); // Judul
-        $sheet->getColumnDimension('J')->setWidth(35); // Luaran diusulkan
-        $sheet->getColumnDimension('K')->setWidth(35); // Luaran tercapai
+        $sheet->getColumnDimension('F')->setWidth(30); // Anggota Tim (nama + jurusan)
+        $sheet->getColumnDimension('J')->setWidth(38); // Luaran diusulkan
+        $sheet->getColumnDimension('K')->setWidth(42); // Luaran tercapai
 
         // Warna selang-seling
         for ($row = 5; $row <= $lastRow; $row++) {
             if ($row % 2 === 0) {
-                $sheet->getStyle("A{$row}:L{$row}")->applyFromArray([
+                $sheet->getStyle("A{$row}:K{$row}")->applyFromArray([
                     'fill' => [
                         'fillType'   => Fill::FILL_SOLID,
                         'startColor' => ['rgb' => 'F4F6F7'],

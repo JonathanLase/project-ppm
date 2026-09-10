@@ -211,6 +211,21 @@
             color: var(--green-700);
             font-size: 11px;
         }
+
+        /* ===== Validasi link Google Drive ===== */
+        .drive-link-hint {
+            font-size: 10.5px;
+            color: var(--ink-500);
+            margin-top: 4px;
+        }
+
+        input.drive-link-input:invalid {
+            border-color: #dc2626;
+        }
+
+        input.drive-link-input.is-valid {
+            border-color: #00875A;
+        }
     </style>
 
     <div style="margin-bottom:14px;">
@@ -297,7 +312,7 @@
                             <span class="ub-icon">📄</span>
                             <span class="ub-text">
                                 <b>Upload File Laporan Hasil</b>
-                                <span>Klik untuk memilih file (PDF, maks. 2MB)</span>
+                                <span>Klik untuk memilih file (PDF, maks. 5MB)</span>
                             </span>
                             <span class="ub-btn">Pilih File</span>
                         </label>
@@ -331,7 +346,7 @@
                             <span class="ub-icon">📄</span>
                             <span class="ub-text">
                                 <b>Upload File Kwitansi</b>
-                                <span>Klik untuk memilih file (PDF, maks. 2MB)</span>
+                                <span>Klik untuk memilih file (PDF, maks. 5MB)</span>
                             </span>
                             <span class="ub-btn">Pilih File</span>
                         </label>
@@ -366,7 +381,7 @@
                             <span class="ub-icon">📄</span>
                             <span class="ub-text">
                                 <b>Upload File Bukti Pajak</b>
-                                <span>Klik untuk memilih file (PDF, maks. 2MB)</span>
+                                <span>Klik untuk memilih file (PDF, maks. 5MB)</span>
                             </span>
                             <span class="ub-btn">Pilih File</span>
                         </label>
@@ -401,7 +416,7 @@
                             <span class="ub-icon">📄</span>
                             <span class="ub-text">
                                 <b>Upload File Berita Acara / Hibah</b>
-                                <span>Klik untuk memilih file (PDF, maks. 2MB)</span>
+                                <span>Klik untuk memilih file (PDF, maks. 5MB)</span>
                             </span>
                             <span class="ub-btn">Pilih File</span>
                         </label>
@@ -419,11 +434,14 @@
 
                 <div class="field">
                     <label>Link Inovasi Produk (Google Drive) <span class="tag-wajib-field">WAJIB DIISI</span></label>
-                    <input type="text" name="link_inovasi_produk" placeholder="https://drive.google.com/..."
+                    <input type="text" name="link_inovasi_produk" class="drive-link-input"
+                        placeholder="https://drive.google.com/..."
                         value="{{ old('link_inovasi_produk', $laporan->link_inovasi_produk ?? '') }}"
-                        {{ $readonly ?? false ? 'disabled' : '' }} required>
-                    <div class="hint" style="text-align:left;">Pastikan akses tautan public/editor agar dapat diakses
-                        admin.</div>
+                        {{ $readonly ?? false ? 'disabled' : '' }} required
+                        pattern="^(https?:\/\/)?(www\.)?(drive|docs)\.google\.com\/.+$" oninput="validateDriveLink(this)">
+                    <div class="hint drive-link-hint" style="text-align:left;">Wajib berupa tautan Google Drive
+                        (drive.google.com atau docs.google.com) dan pastikan akses tautan public/editor agar dapat
+                        diakses admin.</div>
                 </div>
 
                 <div class="field">
@@ -437,37 +455,49 @@
 
         <div class="card">
             <h3 style="margin-bottom:2px;">Status Luaran Wajib &amp; Tambahan</h3>
-            <div class="sub">Luaran berikut diambil dari rencana luaran saat pengajuan proposal. Isi tautan bukti untuk
-                setiap luaran yang telah tercapai — status tercapai/belum tercapai mengikuti otomatis.</div>
+            <div class="sub">Luaran berikut diambil dari rencana luaran saat pengajuan proposal. Status tercapai
+                mengikuti apa yang sudah dicentang di Laporan Kemajuan (khusus jalur Simlitabkes) — untuk jalur
+                Mandiri, semua luaran otomatis tercapai. Isi tautan bukti (wajib berupa link Google Drive) untuk
+                luaran yang berstatus tercapai.</div>
 
             @forelse ($luaranList as $pl)
-                @php $existing = ($laporan->luaran_tercapai ?? [])[$pl->id] ?? null; @endphp
-                <div class="luaran-item">
+                @php
+                    $existing = ($laporan->luaran_tercapai ?? [])[$pl->id] ?? null;
+                    $isTercapai = in_array($pl->id, $luaranTercapaiIds ?? []);
+                @endphp
+                <div class="luaran-item" data-achieved="{{ $isTercapai ? '1' : '0' }}">
                     <div class="hd">
-                        {{-- Checkbox ini SELALU tercentang (bukan lagi mengikuti isi link) karena
-                             luaran ini memang sudah dipilih/direncanakan sejak pengajuan proposal.
-                             Status "tercapai secara faktual" tetap dinilai lewat link bukti di
-                             bawah, bukan lewat checkbox ini. --}}
-                        <input type="checkbox" id="chk{{ $pl->id }}" disabled checked>
-                        <span class="check-visual is-checked" id="checkVisual{{ $pl->id }}"></span>
+                        {{-- Checkbox ini MENGIKUTI status di Laporan Kemajuan (jalur Simlitabkes)
+                             atau selalu tercentang untuk jalur Mandiri (tidak ada tahap Kemajuan). --}}
+                        <input type="checkbox" id="chk{{ $pl->id }}" disabled {{ $isTercapai ? 'checked' : '' }}>
+                        <span class="check-visual {{ $isTercapai ? 'is-checked' : '' }}"
+                            id="checkVisual{{ $pl->id }}"></span>
                         <b>{{ $pl->luaranMaster->nama ?? '-' }}</b>
                         @if ($pl->is_wajib)
                             <span class="tag-wajib">WAJIB</span>
                         @else
                             <span class="opt-tag">TAMBAHAN</span>
                         @endif
+                        @unless ($isTercapai)
+                            <span class="tag-opsional" style="background:#f1f5f9; color:#64748b;">Belum tercapai di
+                                Laporan Kemajuan</span>
+                        @endunless
                     </div>
                     <input type="text" form="formHasil" name="luaran[{{ $pl->id }}][link]"
-                        id="linkLuaran{{ $pl->id }}" placeholder="Link / nama file bukti luaran"
+                        class="drive-link-input" id="linkLuaran{{ $pl->id }}"
+                        placeholder="https://drive.google.com/... (link bukti luaran)"
                         value="{{ $existing['link'] ?? '' }}" {{ $readonly ?? false ? 'disabled' : '' }}
-                        oninput="updateKemajuanLuaran();">
+                        pattern="^(https?:\/\/)?(www\.)?(drive|docs)\.google\.com\/.+$"
+                        oninput="validateDriveLink(this); updateKemajuanLuaran();">
                 </div>
             @empty
                 <div class="sub">Tidak ada luaran yang direncanakan pada pengajuan ini.</div>
             @endforelse
 
             @php
-                $totalLuaran = count($luaranList);
+                $totalTercapai = collect($luaranList)
+                    ->filter(fn($pl) => in_array($pl->id, $luaranTercapaiIds ?? []))
+                    ->count();
             @endphp
             <div class="field" style="margin-top:14px;">
                 <label>Kemajuan Luaran</label>
@@ -475,7 +505,7 @@
                     <div id="progressBarLuaran" style="width:0%; background:#00875A; height:100%; transition:width 0.2s;">
                     </div>
                 </div>
-                <div class="sub" style="margin-top:4px;" id="progressTextLuaran">0 dari {{ $totalLuaran }} luaran
+                <div class="sub" style="margin-top:4px;" id="progressTextLuaran">0 dari {{ $totalTercapai }} luaran
                     terpenuhi (0%)</div>
             </div>
 
@@ -497,7 +527,7 @@
                 <div class="sub" style="margin-bottom:10px;">
                     Luaran yang tercapai di lapangan tapi tidak direncanakan/dipilih saat pengajuan proposal bisa
                     ditambahkan di sini. Pilih judul luaran dari daftar, atau pilih "Lainnya" untuk menulis judul
-                    luaran sendiri, lalu isi tautan buktinya.
+                    luaran sendiri, lalu isi tautan bukti (wajib link Google Drive).
                 </div>
 
                 <div id="luaranLainContainer"></div>
@@ -537,8 +567,10 @@
                     class="luaran-lain-custom" placeholder="Tulis judul luaran secara manual..."
                     {{ $readonly ?? false ? 'disabled' : '' }}>
             </div>
-            <input type="text" form="formHasil" name="luaran_lain[__INDEX__][link]" class="luaran-lain-link"
-                placeholder="Link / nama file bukti luaran" {{ $readonly ?? false ? 'disabled' : '' }}>
+            <input type="text" form="formHasil" name="luaran_lain[__INDEX__][link]"
+                class="luaran-lain-link drive-link-input" placeholder="https://drive.google.com/... (link bukti luaran)"
+                {{ $readonly ?? false ? 'disabled' : '' }} pattern="^(https?:\/\/)?(www\.)?(drive|docs)\.google\.com\/.+$"
+                oninput="validateDriveLink(this)">
             @unless ($readonly ?? false)
                 <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.luaran-lain-row').remove()">
                     Hapus</button>
@@ -573,14 +605,43 @@
             }
         }
 
-        // Progress "Kemajuan Luaran" dihitung dari LINK yang benar-benar sudah diisi
-        // (checkbox di atas selalu tercentang sejak awal sebagai penanda "direncanakan").
+        // ===== Validasi link Google Drive =====
+        const driveLinkRegex = /^(https?:\/\/)?(www\.)?(drive|docs)\.google\.com\/.+$/i;
+
+        function validateDriveLink(input) {
+            const value = input.value.trim();
+            if (value === '') {
+                input.classList.remove('is-valid');
+                input.setCustomValidity('');
+                return;
+            }
+            if (driveLinkRegex.test(value)) {
+                input.classList.add('is-valid');
+                input.setCustomValidity('');
+            } else {
+                input.classList.remove('is-valid');
+                input.setCustomValidity(
+                    'Link harus berupa tautan Google Drive yang valid, contoh: https://drive.google.com/file/d/....'
+                );
+            }
+        }
+
+        // Validasi ulang setiap link Google Drive yang sudah terisi (mis. dari draft) saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.drive-link-input').forEach(validateDriveLink);
+        });
+
+        // Progress "Kemajuan Luaran" sekarang hanya dihitung dari luaran yang memang
+        // berstatus tercapai (data-achieved="1") — sesuai centang di Laporan Kemajuan
+        // (atau semua, untuk jalur Mandiri). Luaran yang belum tercapai tidak ikut
+        // dihitung sebagai penyebut, karena memang belum wajib diisi.
         function updateKemajuanLuaran() {
-            const linkInputs = document.querySelectorAll('.luaran-item input[type="text"][id^="linkLuaran"]');
-            const total = linkInputs.length;
+            const achievedItems = document.querySelectorAll('.luaran-item[data-achieved="1"]');
+            const total = achievedItems.length;
             let terisi = 0;
-            linkInputs.forEach(inp => {
-                if (inp.value.trim().length > 0) terisi++;
+            achievedItems.forEach(item => {
+                const inp = item.querySelector('input[type="text"][id^="linkLuaran"]');
+                if (inp && inp.value.trim().length > 0) terisi++;
             });
 
             const persen = total > 0 ? Math.round((terisi / total) * 100) : 0;
@@ -619,7 +680,10 @@
                 select.value = selectedId;
             }
 
-            if (linkVal) linkInput.value = linkVal;
+            if (linkVal) {
+                linkInput.value = linkVal;
+                validateDriveLink(linkInput);
+            }
 
             document.getElementById('luaranLainContainer').appendChild(row);
             luaranLainIndex++;

@@ -44,7 +44,7 @@
                 </div>
 
                 <div class="field">
-                    <label>Upload Dokumen Kemajuan (PDF, maks. 2MB) <span
+                    <label>Upload Dokumen Kemajuan (PDF, maks. 5MB) <span
                             style="color:#dc2626; font-weight:600; font-size:11.5px;">Wajib diisi</span></label>
                     @if ($laporan && $laporan->file_path)
                         <div class="file-chip"
@@ -109,7 +109,7 @@
                     @endforeach
 
                     <div style="display:flex; gap:10px; margin-top:14px;">
-                           
+
                         <button type="submit" class="btn btn-primary"
                             onclick="document.getElementById('actionInput').value='kirim'">Kirim Laporan</button>
                     </div>

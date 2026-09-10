@@ -94,8 +94,10 @@
                     <h3 class="font-extrabold text-slate-900 text-sm uppercase tracking-wide">
                         Status Luaran Wajib & Tambahan</h3>
                     <p class="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                        Luaran berikut diambil dari rencana luaran saat pengajuan proposal. Isi tautan bukti untuk setiap
-                        luaran yang telah tercapai.
+                        Luaran berikut diambil dari rencana luaran saat pengajuan proposal. Sistem otomatis mengecek
+                        setiap link yang diinput dosen — link diberi tanda <b class="text-emerald-700">Google Drive
+                            Valid</b> kalau formatnya sesuai, atau <b class="text-rose-600">Bukan Google Drive</b>
+                        kalau tidak sesuai dan perlu dicek manual.
                     </p>
                 </div>
 
@@ -116,6 +118,14 @@
                             }
                         }
                         $persen = $totalLuaran > 0 ? round(($jumlahTerpenuhi / $totalLuaran) * 100) : 0;
+
+                        // Pola link Google Drive/Docs yang dianggap sah. Ini cuma
+                        // jaring pengaman tampilan admin — link yang BUKAN Google
+                        // Drive sebenarnya sudah ditolak sejak dosen submit form
+                        // (lihat App\Rules\GoogleDriveLink di LaporanController).
+                        // Badge merah di sini cuma bisa muncul untuk data lama
+                        // yang diinput sebelum validasi itu diberlakukan.
+                        $driveLinkPattern = '/^https:\/\/(drive|docs)\.google\.com\/.+/i';
                     @endphp
 
                     @forelse($luaranList as $l)
@@ -123,8 +133,10 @@
                             $item = $luaranTercapai[$l->id] ?? null;
                             $isChecked = $item ? true : false;
                             $linkBukti = is_array($item) ? $item['link'] ?? '' : $item;
+                            $isValidDriveLink = !empty($linkBukti) && preg_match($driveLinkPattern, trim($linkBukti));
                         @endphp
-                        <div class="p-3.5 bg-slate-50/60 rounded-xl border border-slate-200/70 space-y-2.5">
+                        <div
+                            class="p-3.5 rounded-xl border space-y-2.5 {{ !empty($linkBukti) && !$isValidDriveLink ? 'bg-rose-50/40 border-rose-200' : 'bg-slate-50/60 border-slate-200/70' }}">
                             <div class="flex items-center justify-between gap-3">
                                 <label class="flex items-center gap-2.5 cursor-pointer select-none">
                                     <input type="checkbox" disabled {{ $isChecked ? 'checked' : '' }}
@@ -138,11 +150,26 @@
                                 </span>
                             </div>
                             @if (!empty($linkBukti))
-                                <a href="{{ $linkBukti }}" target="_blank" rel="noopener"
-                                    class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-emerald-700 text-xs truncate block hover:underline hover:bg-emerald-50/40 transition">
-                                    <i
-                                        class="fa-solid fa-arrow-up-right-from-square text-[10px] mr-1"></i>{{ $linkBukti }}
-                                </a>
+                                <div class="flex items-center gap-2">
+                                    <a href="{{ $linkBukti }}" target="_blank" rel="noopener"
+                                        class="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg px-3 py-2 text-emerald-700 text-xs truncate block hover:underline hover:bg-emerald-50/40 transition">
+                                        <i
+                                            class="fa-solid fa-arrow-up-right-from-square text-[10px] mr-1"></i>{{ $linkBukti }}
+                                    </a>
+                                    @if ($isValidDriveLink)
+                                        <span
+                                            class="shrink-0 inline-flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-2 rounded-lg bg-emerald-600 text-white uppercase tracking-wide shadow-sm"
+                                            title="Link sesuai format Google Drive/Docs">
+                                            <i class="fa-solid fa-circle-check"></i> Google Drive Valid
+                                        </span>
+                                    @else
+                                        <span
+                                            class="shrink-0 inline-flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-2 rounded-lg bg-rose-600 text-white uppercase tracking-wide shadow-sm animate-pulse"
+                                            title="PERINGATAN: link ini BUKAN link Google Drive/Docs — periksa manual sebelum melanjutkan validasi">
+                                            <i class="fa-solid fa-triangle-exclamation"></i> Bukan Google Drive
+                                        </span>
+                                    @endif
+                                </div>
                             @else
                                 <div
                                     class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-400 text-xs truncate italic">
@@ -182,30 +209,50 @@
                     </div>
 
                     <div class="space-y-3 pt-1">
-                        @foreach ($selected->luaran_tambahan_lain as $item)
-    @php
-        // Entri manual (input "Lainnya") menyimpan nama langsung di nama_custom
-        // dan luaran_master_id-nya null — jadi cek nama_custom dulu sebelum
-        // query ke LuaranMaster, biar tidak selalu jatuh ke "Luaran tidak ditemukan".
-        $namaLuaran = $item['nama_custom'] ?? null;
-        if (!$namaLuaran && !empty($item['luaran_master_id'])) {
-            $lm = \App\Models\LuaranMaster::find($item['luaran_master_id']);
-            $namaLuaran = $lm->nama ?? null;
-        }
-    @endphp
-    <div class="p-3.5 bg-amber-50/40 rounded-xl border border-amber-200/70 space-y-2.5">
-        <div class="flex items-center justify-between gap-3">
-            <span
-                class="font-bold text-slate-800 text-xs">{{ $namaLuaran ?? 'Luaran tidak ditemukan' }}</span>
+                        @foreach ($selected->luaran_tambahan_lain as $index => $item)
+                            @php
+                                // Entri manual (input "Lainnya") menyimpan nama langsung di nama_custom
+                                // dan luaran_master_id-nya null — jadi cek nama_custom dulu sebelum
+                                // query ke LuaranMaster, biar tidak selalu jatuh ke "Luaran tidak ditemukan".
+                                $namaLuaran = $item['nama_custom'] ?? null;
+                                if (!$namaLuaran && !empty($item['luaran_master_id'])) {
+                                    $lm = \App\Models\LuaranMaster::find($item['luaran_master_id']);
+                                    $namaLuaran = $lm->nama ?? null;
+                                }
+                                $linkLain = $item['link'] ?? '';
+                                $isValidDriveLinkLain =
+                                    !empty($linkLain) && preg_match($driveLinkPattern, trim($linkLain));
+                            @endphp
+                            <div
+                                class="p-3.5 rounded-xl border space-y-2.5 {{ !empty($linkLain) && !$isValidDriveLinkLain ? 'bg-rose-50/40 border-rose-200' : 'bg-amber-50/40 border-amber-200/70' }}">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span
+                                        class="font-bold text-slate-800 text-xs">{{ $namaLuaran ?? 'Luaran tidak ditemukan' }}</span>
+                                    <span
                                         class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-700 uppercase">
                                         Tambahan Dosen</span>
                                 </div>
-                                @if (!empty($item['link']))
-                                    <a href="{{ $item['link'] }}" target="_blank" rel="noopener"
-                                        class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-emerald-700 text-xs truncate block hover:underline hover:bg-emerald-50/40 transition">
-                                        <i
-                                            class="fa-solid fa-arrow-up-right-from-square text-[10px] mr-1"></i>{{ $item['link'] }}
-                                    </a>
+                                @if (!empty($linkLain))
+                                    <div class="flex items-center gap-2">
+                                        <a href="{{ $linkLain }}" target="_blank" rel="noopener"
+                                            class="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg px-3 py-2 text-emerald-700 text-xs truncate block hover:underline hover:bg-emerald-50/40 transition">
+                                            <i
+                                                class="fa-solid fa-arrow-up-right-from-square text-[10px] mr-1"></i>{{ $linkLain }}
+                                        </a>
+                                        @if ($isValidDriveLinkLain)
+                                            <span
+                                                class="shrink-0 inline-flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-2 rounded-lg bg-emerald-600 text-white uppercase tracking-wide shadow-sm"
+                                                title="Link sesuai format Google Drive/Docs">
+                                                <i class="fa-solid fa-circle-check"></i> Google Drive Valid
+                                            </span>
+                                        @else
+                                            <span
+                                                class="shrink-0 inline-flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-2 rounded-lg bg-rose-600 text-white uppercase tracking-wide shadow-sm animate-pulse"
+                                                title="PERINGATAN: link ini BUKAN link Google Drive/Docs — periksa manual sebelum melanjutkan validasi">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Bukan Google Drive
+                                            </span>
+                                        @endif
+                                    </div>
                                 @endif
                             </div>
                         @endforeach
@@ -334,8 +381,26 @@
                 <h3 class="font-extrabold text-slate-900 text-sm uppercase tracking-wide border-b border-slate-100 pb-3">
                     Link Inovasi / Produk</h3>
                 @if ($selected->link_inovasi_produk)
-                    <a href="{{ $selected->link_inovasi_produk }}" target="_blank"
-                        class="font-bold text-emerald-700 text-xs hover:underline block truncate bg-slate-50/50 border border-slate-200/80 p-3 rounded-xl">{{ $selected->link_inovasi_produk }}</a>
+                    @php
+                        $isValidDriveLinkInovasi = preg_match($driveLinkPattern, trim($selected->link_inovasi_produk));
+                    @endphp
+                    <div class="flex items-center gap-2">
+                        <a href="{{ $selected->link_inovasi_produk }}" target="_blank"
+                            class="flex-1 min-w-0 font-bold text-emerald-700 text-xs hover:underline block truncate bg-slate-50/50 border border-slate-200/80 p-3 rounded-xl">{{ $selected->link_inovasi_produk }}</a>
+                        @if ($isValidDriveLinkInovasi)
+                            <span
+                                class="shrink-0 inline-flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-2 rounded-lg bg-emerald-600 text-white uppercase tracking-wide shadow-sm"
+                                title="Link sesuai format Google Drive/Docs">
+                                <i class="fa-solid fa-circle-check"></i> Google Drive Valid
+                            </span>
+                        @else
+                            <span
+                                class="shrink-0 inline-flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-2 rounded-lg bg-rose-600 text-white uppercase tracking-wide shadow-sm animate-pulse"
+                                title="PERINGATAN: link ini BUKAN link Google Drive/Docs — periksa manual sebelum melanjutkan validasi">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Bukan Google Drive
+                            </span>
+                        @endif
+                    </div>
                 @else
                     <span class="font-bold text-slate-900 text-xs block">-</span>
                 @endif
@@ -423,11 +488,11 @@
                 </div>
             </form>
 
-                            {{-- ===================== RIWAYAT VALIDASI (TRACKING, TIDAK PERNAH DITIMPA) ===================== --}}
-                @include('partials.timeline-validasi', [
-                    'sumber' => [['objek' => $selected, 'tahap' => 'laporan_hasil']],
-                    'judul'  => 'Riwayat Validasi Laporan Hasil',
-                ])
+            {{-- ===================== RIWAYAT VALIDASI (TRACKING, TIDAK PERNAH DITIMPA) ===================== --}}
+            @include('partials.timeline-validasi', [
+                'sumber' => [['objek' => $selected, 'tahap' => 'laporan_hasil']],
+                'judul' => 'Riwayat Validasi Laporan Hasil',
+            ])
         </div>
     </div>
 
