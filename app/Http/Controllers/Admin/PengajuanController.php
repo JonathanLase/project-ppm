@@ -109,7 +109,7 @@ class PengajuanController extends Controller
             ['path' => request()->url(), 'query' => request()->query()]
         );
 
-        return view('admin.pengajuan.semua', compact(
+        return view('Admin.pengajuan.semua', compact(
             'title',
             'pengajuans',
             'totalSemua',

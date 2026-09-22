@@ -39,7 +39,12 @@ class ValidasiController extends Controller
         $title = 'Validasi Proposal';
 
         $pengajuan = Pengajuan::with([
-            'pegawai', 'skema', 'rumpunIlmu', 'tim.pegawai', 'luaran.luaranMaster', 'validator',
+            'pegawai',
+            'skema',
+            'rumpunIlmu',
+            'tim.pegawai',
+            'luaran.luaranMaster',
+            'validator',
             'riwayatValidasi.admin', // <-- semua riwayat untuk timeline tracking
         ])->findOrFail($id);
 
@@ -123,7 +128,9 @@ class ValidasiController extends Controller
         $title = 'Validasi Laporan Kemajuan';
 
         $laporan = LaporanKemajuan::with([
-            'pengajuan.pegawai', 'pengajuan.skema', 'validator',
+            'pengajuan.pegawai',
+            'pengajuan.skema',
+            'validator',
             'riwayatValidasi.admin',
         ])->findOrFail($id);
 
@@ -206,7 +213,9 @@ class ValidasiController extends Controller
         $title = 'Validasi Laporan Hasil';
 
         $laporan = LaporanHasil::with([
-            'pengajuan.pegawai', 'pengajuan.skema', 'validator',
+            'pengajuan.pegawai',
+            'pengajuan.skema',
+            'validator',
             'riwayatValidasi.admin',
         ])->findOrFail($id);
 

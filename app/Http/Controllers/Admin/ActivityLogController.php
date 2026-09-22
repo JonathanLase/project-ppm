@@ -13,6 +13,6 @@ class ActivityLogController extends Controller
         // Mengambil data log terbaru beserta data user yang melakukannya
         $logs = ActivityLog::with('user')->latest()->paginate(10);
 
-        return view('admin.activity_log', compact('logs'));
+        return view('Admin.activity_log', compact('logs'));
     }
 }

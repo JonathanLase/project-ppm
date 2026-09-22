@@ -84,12 +84,15 @@ class LaporanAdminController extends Controller
         $filters2 = $request->only(['tahun2', 'jurusan2', 'jenis2', 'jalur2', 'skema_id2']);
 
         $query2 = Pengajuan::with([
-                'pegawai', 'anggotas.pegawai',
-                'skema', 'laporanKemajuan', 'laporanHasil',
-                // ✅ FIX: load nama luaran (luaranMaster) & detail realisasi yang diinput dosen
-                'luaran.luaranMaster',
-                'luaran.realisasi',
-            ])
+            'pegawai',
+            'anggotas.pegawai',
+            'skema',
+            'laporanKemajuan',
+            'laporanHasil',
+            // ✅ FIX: load nama luaran (luaranMaster) & detail realisasi yang diinput dosen
+            'luaran.luaranMaster',
+            'luaran.realisasi',
+        ])
             ->when($filters2['tahun2'] ?? null, function ($q) use ($filters2, $kolomTahun) {
                 $kolomTahun === 'created_at'
                     ? $q->whereYear('created_at', $filters2['tahun2'])
@@ -120,7 +123,7 @@ class LaporanAdminController extends Controller
         $sum2Selesai  = $data2->getCollection()->filter(fn($p) => $p->status === 'disetujui')->count();
 
         // Pastikan $kolomTahun ikut di-compact
-        return view('admin.laporan.index', compact(
+        return view('Admin.laporan.index', compact(
             'activeTab',
             'kolomTahun',      // ← wajib ada untuk laporan2
             'tahunList',
@@ -271,7 +274,7 @@ class LaporanAdminController extends Controller
                 'items'     => $items,
             ])
             ->sortByDesc('total');
-            // ⚠️ ->values() DIHAPUS supaya key tetap nama jurusan (bukan 0,1,2...)
+        // ⚠️ ->values() DIHAPUS supaya key tetap nama jurusan (bukan 0,1,2...)
     }
 
     public function getLaporan1Data(?string $tahun, string $kolomTahun = 'tahun_pengajuan'): \Illuminate\Support\Collection
@@ -304,15 +307,15 @@ class LaporanAdminController extends Controller
         $kolomTahun = $filters['kolomTahun'] ?? $this->getKolomTahun();
 
         $result = Pengajuan::with([
-                'pegawai',
-                'anggotas.pegawai',
-                'skema',
-                'laporanKemajuan',
-                'laporanHasil',
-                // ✅ FIX: load nama luaran (luaranMaster) & detail realisasi yang diinput dosen
-                'luaran.luaranMaster',
-                'luaran.realisasi',
-            ])
+            'pegawai',
+            'anggotas.pegawai',
+            'skema',
+            'laporanKemajuan',
+            'laporanHasil',
+            // ✅ FIX: load nama luaran (luaranMaster) & detail realisasi yang diinput dosen
+            'luaran.luaranMaster',
+            'luaran.realisasi',
+        ])
             ->when($filters['tahun'] ?? null, function ($q) use ($filters, $kolomTahun) {
                 if ($kolomTahun === 'created_at') {
                     $q->whereYear('created_at', $filters['tahun']);

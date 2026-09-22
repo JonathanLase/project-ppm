@@ -98,7 +98,7 @@ class DashboardController extends Controller
             ->sortByDesc('updated_at')
             ->take(5);
 
-        return view('admin.dashboard', compact(
+        return view('Admin.dashboard', compact(
             'title',
             'stats',
             'persenPenelitian',

@@ -20,7 +20,7 @@ class MasterDataController extends Controller
     public function skemaIndex(Request $request)
     {
         $skemas = Skema::paginate(10);
-        return view('admin.master.skema', compact('skemas'));
+        return view('Admin.master.skema', compact('skemas'));
     }
 
     public function skemaStore(Request $request)
@@ -64,7 +64,7 @@ class MasterDataController extends Controller
     public function rumpunIlmuIndex(Request $request)
     {
         $rumpuns = RumpunIlmu::orderBy('kode', 'asc')->paginate(15);
-        return view('admin.master.rumpun', compact('rumpuns'));
+        return view('Admin.master.rumpun', compact('rumpuns'));
     }
 
     public function rumpunStore(Request $request)
@@ -110,7 +110,7 @@ class MasterDataController extends Controller
         $jenis = $request->get('jenis', 'penelitian');
         $luarans = LuaranMaster::where('jenis', $jenis)->paginate(10);
 
-        return view('admin.master.luaran', compact('luarans', 'jenis'));
+        return view('Admin.master.luaran', compact('luarans', 'jenis'));
     }
 
     public function luaranStore(Request $request)
@@ -157,7 +157,7 @@ class MasterDataController extends Controller
     public function pegawaiIndex(Request $request)
     {
         $pegawais = Pegawai::latest()->paginate(10);
-        return view('admin.master.pegawai', compact('pegawais'));
+        return view('Admin.master.pegawai', compact('pegawais'));
     }
 
     // Tambah pegawai baru (CRUD - Create)

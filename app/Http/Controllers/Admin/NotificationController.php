@@ -21,7 +21,7 @@ class NotificationController extends Controller
 
         $notifications = $query->get();
 
-        return view('admin.notifikasi', compact('notifications', 'filter'));
+        return view('Admin.notifikasi', compact('notifications', 'filter'));
     }
 
     public function markAsRead($id)
