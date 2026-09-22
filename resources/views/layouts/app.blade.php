@@ -1,3 +1,6 @@
+@if(auth()->check() && auth()->user()->role === 'petugas_ppm')
+    @include('layouts.petugas')
+@else
 <!DOCTYPE html>
 <html lang="id">
 
@@ -9,6 +12,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ asset('img/logo-icon.png') }}">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
     {{-- ====== OVERRIDE STYLE: sidebar hijau, logout merah ======
@@ -75,6 +79,9 @@
 
 <body>
     <div class="app">
+        @if(auth()->user()->role === 'petugas_ppm')
+            @include('partials.sidebar-petugas-app')
+        @else
         <aside class="sidebar">
             <div class="brand">
                 <div class="brand-mark"><img src="{{ asset('img/logo-icon.png') }}" alt="Logo Poltekkes Kemenkes Medan"
@@ -82,31 +89,20 @@
                 <div class="brand-text"><b>Poltekkes Kemenkes</b><span>Medan · SIPPM</span></div>
             </div>
             <div class="nav">
-                <a class="{{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><span
-                        class="ic">▦</span>Dashboard</a>
-                <a class="{{ request()->routeIs('pengajuan.*') ? 'active' : '' }}"
-                    href="{{ route('pengajuan.daftar') }}"><span class="ic">✎</span>Pengajuan Proposal</a>
-                <a class="{{ request()->routeIs('riwayat') || request()->routeIs('pengajuan.detail') ? 'active' : '' }}"
-                    href="{{ route('riwayat') }}"><span class="ic">◷</span>Riwayat Pengajuan</a>
-                <a class="{{ request()->routeIs('laporan.kemajuan*') ? 'active' : '' }}"
-                    href="{{ route('laporan.kemajuan') }}"><span class="ic">▤</span>Laporan Kemajuan</a>
-                <a class="{{ request()->routeIs('laporan.*') && !request()->routeIs('laporan.kemajuan*') ? 'active' : '' }}"
-                    href="{{ route('laporan.index', 'hasil') }}"><span class="ic">▤</span>Laporan Hasil</a>
-                <a class="{{ request()->routeIs('notifikasi*') ? 'active' : '' }}"
-                    href="{{ route('notifikasi') }}"><span class="ic">🔔</span>Notifikasi</a>
-                <a class="{{ request()->routeIs('profil*') ? 'active' : '' }}" href="{{ route('profil') }}"><span
-                        class="ic">◈</span>Profil</a>
-                <a href="{{ route('ubah-password') }}"
-                    class="{{ request()->routeIs('ubah-password') ? 'active' : '' }}"><span class="ic">⚿</span>Ubah
-                    Password</a>
-                <a href="#" class="logout-link"
-                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();"><span
-                        class="ic">⏻</span>Logout</a>
+                <a class="{{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><span class="ic">▦</span>Dashboard</a>
+                <a class="{{ request()->routeIs('pengajuan.*') ? 'active' : '' }}" href="{{ route('pengajuan.daftar') }}"><span class="ic">✎</span>Pengajuan Proposal</a>
+                <a class="{{ request()->routeIs('riwayat') || request()->routeIs('pengajuan.detail') ? 'active' : '' }}" href="{{ route('riwayat') }}"><span class="ic">◷</span>Riwayat Pengajuan</a>
+                <a class="{{ request()->routeIs('laporan.kemajuan*') ? 'active' : '' }}" href="{{ route('laporan.kemajuan') }}"><span class="ic">▤</span>Laporan Kemajuan</a>
+                <a class="{{ request()->routeIs('laporan.*') && !request()->routeIs('laporan.kemajuan*') ? 'active' : '' }}" href="{{ route('laporan.index', 'hasil') }}"><span class="ic">▤</span>Laporan Hasil</a>
+                <a class="{{ request()->routeIs('notifikasi*') ? 'active' : '' }}" href="{{ route('notifikasi') }}"><span class="ic">🔔</span>Notifikasi</a>
+                <a class="{{ request()->routeIs('profil*') ? 'active' : '' }}" href="{{ route('profil') }}"><span class="ic">◈</span>Profil</a>
+                <a href="{{ route('ubah-password') }}" class="{{ request()->routeIs('ubah-password') ? 'active' : '' }}"><span class="ic">⚿</span>Ubah Password</a>
+                <a href="#" class="logout-link" onclick="event.preventDefault(); document.getElementById('logout-form').submit();"><span class="ic">⏻</span>Logout</a>
                 <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none;">@csrf</form>
             </div>
-            <div class="sidebar-foot">Sistem Informasi Pengelolaan<br>Penelitian &amp; Pengabdian Masyarakat<br>&copy;
-                {{ date('Y') }}</div>
+            <div class="sidebar-foot">Sistem Informasi Pengelolaan<br>Penelitian &amp; Pengabdian Masyarakat<br>&copy; {{ date('Y') }}</div>
         </aside>
+        @endif
 
         <div class="main">
             <div class="topbar">
@@ -141,3 +137,5 @@
 </body>
 
 </html>
+
+@endif

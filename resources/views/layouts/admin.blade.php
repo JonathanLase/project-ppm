@@ -1,3 +1,6 @@
+@if(auth()->check() && auth()->user()->role === 'petugas_ppm')
+    @include('layouts.petugas')
+@else
 <!DOCTYPE html>
 <html lang="id">
 
@@ -14,6 +17,7 @@
         rel="stylesheet">
     <!-- Alpine.js untuk Dropdown Interaktif -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="icon" type="image/png" href="{{ asset('img/logo-icon.png') }}">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -78,6 +82,9 @@
 <body class="bg-[#f1f5f9] text-slate-900 flex h-screen overflow-hidden">
 
     <!-- ============================= SIDEBAR ============================= -->
+    @if(auth()->user()->role === 'petugas_ppm')
+        @include('partials.sidebar-petugas-admin')
+    @else
     <aside class="w-72 bg-[#022c22] text-white flex flex-col h-full shrink-0 select-none shadow-2xl">
         <div class="brand">
             <div class="brand-mark">
@@ -126,8 +133,7 @@
             </div>
 
             <div>
-                <div class="text-[10px] font-bold tracking-widest text-emerald-400 uppercase px-4 mb-2">Master Data
-                </div>
+                <div class="text-[10px] font-bold tracking-widest text-emerald-400 uppercase px-4 mb-2">Master Data</div>
                 <div class="space-y-1 text-emerald-100/90 font-medium">
                     <a href="{{ route('admin.master.skema') }}"
                         class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition {{ request()->routeIs('admin.master.skema*') ? 'bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-950/40' : 'hover:bg-emerald-900/60 hover:text-white' }}">
@@ -149,13 +155,10 @@
             </div>
 
             <div class="pt-3 border-t border-emerald-900/80 space-y-1 text-emerald-100/90 font-medium">
-                <!-- MENU LAPORAN YANG DISATUKAN -->
                 <a href="{{ route('admin.laporan') }}"
                     class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition {{ request()->routeIs('admin.laporan*') ? 'bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-950/40' : 'hover:bg-emerald-900/60 hover:text-white' }}">
                     <i class="fa-solid fa-chart-pie w-4 text-center text-emerald-400"></i> Laporan
                 </a>
-                <!-- END MENU LAPORAN -->
-
                 <a href="{{ route('admin.activity_log') }}"
                     class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition {{ request()->routeIs('admin.activity_log') ? 'bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-950/40' : 'hover:bg-emerald-900/60 hover:text-white' }}">
                     <i class="fa-solid fa-clock-rotate-left w-4 text-center text-emerald-400"></i> Activity Log
@@ -164,8 +167,6 @@
                     class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition {{ request()->routeIs('admin.notifikasi') ? 'bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-950/40' : 'hover:bg-emerald-900/60 hover:text-white' }}">
                     <i class="fa-solid fa-bell w-4 text-center text-amber-400"></i> Notifikasi
                 </a>
-
-                <!-- FORM LOGOUT -->
                 <form action="{{ route('admin.logout') }}" method="POST" class="pt-2">
                     @csrf
                     <button type="submit"
@@ -176,11 +177,11 @@
             </div>
         </nav>
 
-        <div
-            class="p-4 text-[10px] text-emerald-400/80 border-t border-emerald-950/80 leading-tight shrink-0 bg-[#011a14]">
-            Sistem Informasi Pengelolaan Penelitian & Pengabdian Masyarakat<br>&copy; {{ date('Y') }}
+        <div class="p-4 text-[10px] text-emerald-400/80 border-t border-emerald-950/80 leading-tight shrink-0 bg-[#011a14]">
+            Sistem Informasi Pengelolaan Penelitian &amp; Pengabdian Masyarakat<br>&copy; {{ date('Y') }}
         </div>
     </aside>
+    @endif
 
     <!-- ============================= MAIN CONTENT AREA ============================= -->
     <div class="flex-grow flex flex-col h-full overflow-hidden">
@@ -252,3 +253,4 @@
 </body>
 
 </html>
+@endif

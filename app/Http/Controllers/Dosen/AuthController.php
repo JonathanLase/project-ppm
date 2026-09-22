@@ -116,6 +116,12 @@ class AuthController extends Controller
             'must_change_password' => false,
         ]);
 
+        if ($user->role === 'petugas_ppm') {
+            return redirect()->route('petugas.dashboard')->with('success', 'Password berhasil diperbarui.');
+        } elseif ($user->role === 'admin') {
+            return redirect()->route('admin.dashboard')->with('success', 'Password berhasil diperbarui.');
+        }
+
         return redirect()->route('dashboard')->with('success', 'Password berhasil diperbarui.');
     }
 }

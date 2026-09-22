@@ -15,6 +15,7 @@ use App\Http\Controllers\LuaranController;
 use App\Http\Controllers\PengajuanController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\RiwayatController;
+use App\Http\Controllers\Petugas\DashboardController as PetugasDashboardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -123,6 +124,14 @@ Route::middleware(['auth', 'role:dosen'])->group(function () {
     Route::post('/profil/foto', [ProfilController::class, 'updateFoto'])
         ->name('profil.foto');
 
+});
+
+/*
+|--------------------------------------------------------------------------
+| Area Bersama Dosen & Petugas PPM
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:dosen,petugas_ppm'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
@@ -329,7 +338,7 @@ Route::middleware(['auth', 'role:dosen'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:admin'])
+Route::middleware(['auth', 'role:admin,petugas_ppm'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -692,3 +701,41 @@ Route::middleware(['auth', 'role:admin'])
     )->name('notifikasi.read');
 });
 
+
+/*
+|--------------------------------------------------------------------------
+| Area Petugas PPM
+| Wajib Login + Role Petugas PPM
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:petugas_ppm'])
+    ->prefix('petugas')
+    ->name('petugas.')
+    ->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard Petugas
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/dashboard', [PetugasDashboardController::class, 'index'])
+        ->name('dashboard');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profil Petugas
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/profil', [ProfilController::class, 'index'])
+        ->name('profil');
+    Route::put('/profil', [ProfilController::class, 'update'])
+        ->name('profil.update');
+    Route::post('/profil/foto', [ProfilController::class, 'updateFoto'])
+        ->name('profil.foto');
+
+    Route::get('/ubah-password', [DosenAuthController::class, 'showUbahPassword'])
+        ->name('ubah-password');
+    Route::post('/ubah-password', [DosenAuthController::class, 'ubahPassword'])
+        ->name('ubah-password.submit');
+});

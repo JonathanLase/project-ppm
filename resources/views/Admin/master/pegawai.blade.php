@@ -255,6 +255,7 @@
                             class="w-full border border-gray-200 rounded-xl p-2.5 text-xs focus:outline-none focus:border-emerald-600 bg-white">
                             <option value="dosen">Dosen</option>
                             <option value="admin">Admin</option>
+                            <option value="petugas_ppm">Petugas PPM</option>
                         </select>
                     </div>
                 </div>

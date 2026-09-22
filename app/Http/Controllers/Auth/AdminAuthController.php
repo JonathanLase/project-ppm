@@ -15,18 +15,21 @@ class AdminAuthController extends Controller
         if (Auth::check() && Auth::user()->role === 'admin') {
             return redirect('/admin/dashboard');
         }
+        if (Auth::check() && Auth::user()->role === 'petugas_ppm') {
+            return redirect('/petugas/dashboard');
+        }
         return view('auth.admin-login');
     }
 
     public function login(Request $request)
     {
         $request->validate([
-            'nip' => 'required|string',
+            'nip'      => 'required|string',
             'password' => 'required|string',
         ]);
 
         $pegawai = Pegawai::where('nip', $request->nip)
-            ->where('role', 'admin')
+            ->whereIn('role', ['admin', 'petugas_ppm'])
             ->first();
 
         if (!$pegawai || !Hash::check($request->password, $pegawai->password)) {
@@ -38,15 +41,20 @@ class AdminAuthController extends Controller
         Auth::login($pegawai, $request->boolean('remember'));
         $request->session()->regenerate();
 
+        if ($pegawai->role === 'petugas_ppm') {
+            return redirect('/petugas/dashboard');
+        }
+
         return redirect('/admin/dashboard');
     }
 
     public function logout(Request $request)
     {
+        $role = Auth::user()?->role;
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/admin/login');
+        return redirect($role === 'petugas_ppm' ? '/admin/login' : '/admin/login');
     }
 }

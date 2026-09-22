@@ -11,15 +11,16 @@ class EnsureRole
 {
     /**
      * Membatasi akses halaman hanya untuk role tertentu.
-     * Dipakai di route lewat middleware alias 'role:dosen' atau 'role:admin'.
+     * Dipakai di route lewat middleware alias 'role:dosen' atau 'role:admin,petugas_ppm'.
+     * Mendukung multiple role dipisah koma.
      */
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         if (!Auth::check()) {
             return redirect('/');
         }
 
-        if (Auth::user()->role !== $role) {
+        if (!in_array(Auth::user()->role, $roles)) {
             abort(403, 'Anda tidak memiliki akses ke halaman ini.');
         }
 

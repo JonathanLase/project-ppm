@@ -250,7 +250,7 @@
             @endif
 
             <div class="up-body">
-                <form method="POST" action="{{ route('ubah-password.submit') }}" id="up-form">
+                <form method="POST" action="{{ auth()->user()->role === 'petugas_ppm' ? route('petugas.ubah-password.submit') : route('ubah-password.submit') }}" id="up-form">
                     @csrf
                     <div class="up-field">
                         <label for="password_baru">Password Baru</label>
