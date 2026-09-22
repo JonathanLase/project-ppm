@@ -1,4 +1,4 @@
-@extends('admin.dashboard')
+@extends('Admin.dashboard')
 
 @section('title', 'Manajemen User - SIPPM')
 @section('header_title', 'Manajemen User')

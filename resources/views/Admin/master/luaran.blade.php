@@ -1,4 +1,4 @@
-@extends('admin.dashboard')
+@extends('Admin.dashboard')
 
 @section('title', 'Master Luaran - SIPPM')
 @section('header_title', 'Master Luaran')
