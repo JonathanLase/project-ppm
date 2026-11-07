@@ -245,6 +245,24 @@ class MasterDataController extends Controller
     }
 
     // Proses import data pegawai dari file Excel/CSV
+    // public function pegawaiImport(Request $request)
+    // {
+    //     $request->validate([
+    //         'file' => 'required|mimes:xlsx,xls,csv|max:2048',
+    //     ], [
+    //         'file.required' => 'Silakan pilih file terlebih dahulu.',
+    //         'file.mimes' => 'Format file harus berupa Excel (.xlsx, .xls) atau CSV.',
+    //         'file.max' => 'Ukuran file maksimal adalah 2MB.',
+    //     ]);
+
+    //     try {
+    //         Excel::import(new PegawaiImport, $request->file('file'));
+    //         return redirect()->route('admin.master.pegawai')->with('success', 'Data pegawai berhasil di-import!');
+    //     } catch (\Exception $e) {
+    //         return back()->with('error', 'Terjadi kesalahan saat meng-import data: ' . $e->getMessage());
+    //     }
+    // }
+
     public function pegawaiImport(Request $request)
     {
         $request->validate([
@@ -254,6 +272,9 @@ class MasterDataController extends Controller
             'file.mimes' => 'Format file harus berupa Excel (.xlsx, .xls) atau CSV.',
             'file.max' => 'Ukuran file maksimal adalah 2MB.',
         ]);
+
+        // Berikan waktu eksekusi hingga 300 detik (5 menit) untuk import data besar
+        set_time_limit(300);
 
         try {
             Excel::import(new PegawaiImport, $request->file('file'));
