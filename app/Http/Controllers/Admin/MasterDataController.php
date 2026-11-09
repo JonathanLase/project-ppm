@@ -265,6 +265,43 @@ class MasterDataController extends Controller
         return redirect()->route('admin.master.pegawai')->with('success', 'Data pegawai berhasil dihapus.');
     }
 
+    // Reset password user / pegawai oleh Admin
+    public function pegawaiResetPassword(Request $request, $id)
+    {
+        $pegawai = Pegawai::findOrFail($id);
+
+        $request->validate([
+            'reset_type' => 'required|in:default,custom',
+            'custom_password' => 'nullable|required_if:reset_type,custom|string|min:6',
+            'must_change_password' => 'nullable',
+        ], [
+            'custom_password.required_if' => 'Password baru manual wajib diisi jika memilih opsi custom.',
+            'custom_password.min' => 'Password baru minimal 6 karakter.',
+        ]);
+
+        if ($request->reset_type === 'custom') {
+            $newPassword = $request->custom_password;
+        } else {
+            // Default: Gunakan NIP jika ada dan panjang minimal 6 digit, fallback ke 'password123'
+            $cleanNip = trim($pegawai->nip ?? '');
+            $newPassword = (!empty($cleanNip) && strlen($cleanNip) >= 6) ? $cleanNip : 'password123';
+        }
+
+        $mustChange = $request->has('must_change_password');
+
+        $pegawai->update([
+            'password' => Hash::make($newPassword),
+            'must_change_password' => $mustChange,
+        ]);
+
+        $message = "Password untuk user '{$pegawai->nama}' berhasil di-reset.";
+        if ($request->reset_type === 'default') {
+            $message .= " Password saat ini: {$newPassword}";
+        }
+
+        return redirect()->route('admin.master.pegawai')->with('success', $message);
+    }
+
     // Proses import data pegawai dari file Excel/CSV
     // public function pegawaiImport(Request $request)
     // {

@@ -184,7 +184,7 @@
                                 <th class="py-4 px-6">Jabatan / Pangkat</th>
                                 <th class="py-4 px-6">Jurusan / Prodi</th>
                                 <th class="py-4 px-6">Kontak</th>
-                                <th class="py-4 px-6 w-32 text-center">Aksi</th>
+                                <th class="py-4 px-6 w-36 text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-50 text-sm text-gray-600">
@@ -217,11 +217,17 @@
                                         <span class="block text-[11px] text-gray-400">HP: {{ $pegawai->hp ?? '-' }}</span>
                                     </td>
                                     <td class="py-4 px-6">
-                                        <div class="flex items-center justify-center gap-2">
+                                        <div class="flex items-center justify-center gap-1.5">
                                             <button type="button" onclick='openEditModal(@json($pegawai))'
                                                 class="w-8 h-8 flex items-center justify-center rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition"
-                                                title="Edit">
+                                                title="Edit Data User">
                                                 <i class="fa-solid fa-pen text-xs"></i>
+                                            </button>
+                                            <button type="button"
+                                                onclick="openResetPasswordModal('{{ route('admin.master.pegawai.reset-password', $pegawai->id) }}', @js($pegawai->nama), @js($pegawai->nip))"
+                                                class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition"
+                                                title="Reset Password">
+                                                <i class="fa-solid fa-key text-xs"></i>
                                             </button>
                                             <button type="button"
                                                 onclick="openDeleteModal('{{ route('admin.master.pegawai.destroy', $pegawai->id) }}', @js($pegawai->nama))"
@@ -387,6 +393,102 @@
         </div>
     </div>
 
+    <!-- Modal Reset Password User -->
+    <div id="modalResetPassword"
+        class="fixed inset-0 z-50 hidden flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100 flex flex-col">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-4 flex justify-between items-center text-white shrink-0">
+                <h3 class="text-sm font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-key text-amber-200"></i> Reset Password User
+                </h3>
+                <button type="button" onclick="closeResetPasswordModal()" class="text-amber-200 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="formResetPassword" action="" method="POST" class="p-6 space-y-4">
+                @csrf
+                <!-- User Info Box -->
+                <div class="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3.5 flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <i class="fa-solid fa-user-lock text-sm"></i>
+                    </div>
+                    <div class="text-xs">
+                        <p class="font-bold text-gray-900" id="resetNamaUser">-</p>
+                        <p class="text-gray-500 mt-0.5">NIP: <span id="resetNipUser" class="font-mono font-medium text-gray-700">-</span></p>
+                    </div>
+                </div>
+
+                <!-- Pilihan Tipe Reset -->
+                <div class="space-y-2.5">
+                    <label class="block text-xs font-semibold text-gray-700">Metode Reset:</label>
+
+                    <label class="flex items-start gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-amber-50/30 transition">
+                        <input type="radio" name="reset_type" value="default" checked
+                            onchange="toggleCustomPasswordInput(false)"
+                            class="mt-0.5 text-amber-600 focus:ring-amber-500">
+                        <div>
+                            <span class="block text-xs font-bold text-gray-900">Reset ke Password Default</span>
+                            <span class="block text-[11px] text-gray-500 mt-0.5">
+                                Password akan diatur ulang sesuai <strong>NIP User</strong> (atau <em>password123</em> jika NIP kurang dari 6 digit).
+                            </span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-amber-50/30 transition">
+                        <input type="radio" name="reset_type" value="custom"
+                            onchange="toggleCustomPasswordInput(true)"
+                            class="mt-0.5 text-amber-600 focus:ring-amber-500">
+                        <div>
+                            <span class="block text-xs font-bold text-gray-900">Tentukan Password Baru Manual</span>
+                            <span class="block text-[11px] text-gray-500 mt-0.5">
+                                Masukkan kata sandi sementara secara manual untuk user ini.
+                            </span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Custom Password Input (Hidden by default) -->
+                <div id="customPasswordContainer" class="hidden space-y-1.5 pt-1">
+                    <label class="block text-xs font-semibold text-gray-700">
+                        Password Baru <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="password" name="custom_password" id="inputCustomPassword" placeholder="Minimal 6 karakter"
+                            class="w-full border border-gray-200 rounded-xl p-2.5 pr-10 text-xs focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/10">
+                        <button type="button" onclick="togglePasswordVisibility('inputCustomPassword', 'eyeIconCustom')"
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                            <i id="eyeIconCustom" class="fa-solid fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Must Change Password Checkbox -->
+                <div class="pt-2 border-t border-gray-100">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="must_change_password" value="1" checked
+                            class="rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                        <span class="text-xs text-gray-700 font-medium">Wajibkan ganti password saat login pertama kali</span>
+                    </label>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex justify-end gap-2.5 pt-3 border-t border-gray-100">
+                    <button type="button" onclick="closeResetPasswordModal()"
+                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs font-semibold transition">
+                        Batal
+                    </button>
+                    <button type="submit"
+                        class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-key text-xs"></i>
+                        <span>Reset Password</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Form Hapus Tersembunyi (submit dipicu lewat SweetAlert2) -->
     <form id="formDelete" action="" method="POST" class="hidden">
         @csrf
@@ -474,6 +576,68 @@
         function closeFormModal() {
             document.getElementById('modalForm').classList.add('hidden');
         }
+
+        // Reset Password User
+        function openResetPasswordModal(resetUrl, namaPegawai, nipPegawai) {
+            const modal = document.getElementById('modalResetPassword');
+            const form = document.getElementById('formResetPassword');
+            document.getElementById('resetNamaUser').textContent = namaPegawai;
+            document.getElementById('resetNipUser').textContent = nipPegawai || '-';
+            form.setAttribute('action', resetUrl);
+
+            // Reset state
+            const radioDefault = document.querySelector('input[name="reset_type"][value="default"]');
+            if (radioDefault) radioDefault.checked = true;
+            toggleCustomPasswordInput(false);
+            const inputCustom = document.getElementById('inputCustomPassword');
+            if (inputCustom) inputCustom.value = '';
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeResetPasswordModal() {
+            document.getElementById('modalResetPassword').classList.add('hidden');
+        }
+
+        function toggleCustomPasswordInput(isCustom) {
+            const container = document.getElementById('customPasswordContainer');
+            const input = document.getElementById('inputCustomPassword');
+            if (isCustom) {
+                container.classList.remove('hidden');
+                input.setAttribute('required', 'required');
+                input.focus();
+            } else {
+                container.classList.add('hidden');
+                input.removeAttribute('required');
+            }
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        document.getElementById('formResetPassword')?.addEventListener('submit', function() {
+            Swal.fire({
+                title: 'Mereset Password...',
+                text: 'Mohon tunggu sebentar.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        });
 
         // Konfirmasi Hapus dengan SweetAlert2
         function openDeleteModal(deleteUrl, namaPegawai) {

@@ -583,6 +583,11 @@ Route::middleware(['auth', 'role:admin,petugas_ppm'])
             [MasterDataController::class, 'pegawaiUpdate']
         )->name('pegawai.update');
 
+        Route::post(
+            '/pegawai/{id}/reset-password',
+            [MasterDataController::class, 'pegawaiResetPassword']
+        )->name('pegawai.reset-password');
+
         Route::delete(
             '/pegawai/{id}',
             [MasterDataController::class, 'pegawaiDestroy']
