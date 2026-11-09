@@ -102,29 +102,30 @@
 
             <!-- Toolbar Pencarian & Filter Data Pegawai -->
             <div class="p-5 border-b border-gray-100 bg-white">
-                <form method="GET" action="{{ route('admin.master.pegawai') }}" class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <form id="searchPegawaiForm" method="GET" action="{{ route('admin.master.pegawai') }}" class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div class="flex flex-col sm:flex-row items-center gap-3 flex-1 w-full">
                         <!-- Input Pencarian -->
                         <div class="relative w-full sm:max-w-md">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400 pointer-events-none">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400 pointer-events-none" id="searchIcon">
                                 <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                            </span>
+                            <span class="absolute inset-y-0 left-0 hidden items-center pl-3.5 text-emerald-600 pointer-events-none" id="searchLoadingIcon">
+                                <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
                             </span>
                             <input type="text" name="search" id="searchInput" value="{{ request('search') }}"
                                 placeholder="Cari nama, NIP, NIDN, jurusan, atau prodi..."
                                 autocomplete="off"
                                 class="w-full pl-9 pr-9 py-2.5 text-xs border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:bg-white transition">
-                            @if(request('search'))
-                                <a href="{{ route('admin.master.pegawai', array_filter(['role' => request('role')])) }}"
-                                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition"
-                                    title="Hapus pencarian">
-                                    <i class="fa-solid fa-circle-xmark text-xs"></i>
-                                </a>
-                            @endif
+                            <button type="button" id="clearSearchBtn"
+                                class="{{ request('search') ? '' : 'hidden' }} absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition"
+                                title="Hapus pencarian">
+                                <i class="fa-solid fa-circle-xmark text-xs"></i>
+                            </button>
                         </div>
 
                         <!-- Filter Role -->
                         <div class="w-full sm:w-44">
-                            <select name="role" onchange="this.form.submit()"
+                            <select name="role" id="roleFilter"
                                 class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-xs bg-gray-50/50 text-gray-700 font-medium focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:bg-white transition cursor-pointer">
                                 <option value="">Semua Role</option>
                                 <option value="dosen" {{ request('role') == 'dosen' ? 'selected' : '' }}>Dosen</option>
@@ -141,24 +142,24 @@
                                 <span>Cari</span>
                             </button>
 
-                            @if(request('search') || request('role'))
-                                <a href="{{ route('admin.master.pegawai') }}"
-                                    class="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium rounded-xl transition flex items-center justify-center gap-1.5"
-                                    title="Reset filter & pencarian">
-                                    <i class="fa-solid fa-rotate-left text-xs"></i>
-                                    <span>Reset</span>
-                                </a>
-                            @endif
+                            <button type="button" id="btnResetSearch"
+                                class="{{ request('search') || request('role') ? '' : 'hidden' }} px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                title="Reset filter & pencarian">
+                                <i class="fa-solid fa-rotate-left text-xs"></i>
+                                <span>Reset</span>
+                            </button>
                         </div>
                     </div>
 
                     <!-- Informasi Hasil Pencarian -->
-                    @if(request('search') || request('role'))
-                        <div class="text-xs text-gray-500 bg-emerald-50/80 border border-emerald-100 px-3.5 py-2 rounded-xl flex items-center gap-2 self-start lg:self-auto">
-                            <i class="fa-solid fa-circle-info text-emerald-600 text-xs"></i>
-                            <span>Ditemukan <strong class="text-emerald-800 font-bold">{{ $pegawais->total() }}</strong> data</span>
-                        </div>
-                    @endif
+                    <div id="searchInfoContainer">
+                        @if(request('search') || request('role'))
+                            <div class="text-xs text-gray-500 bg-emerald-50/80 border border-emerald-100 px-3.5 py-2 rounded-xl flex items-center gap-2 self-start lg:self-auto">
+                                <i class="fa-solid fa-circle-info text-emerald-600 text-xs"></i>
+                                <span>Ditemukan <strong class="text-emerald-800 font-bold">{{ $pegawais->total() }}</strong> data</span>
+                            </div>
+                        @endif
+                    </div>
                 </form>
             </div>
 
@@ -170,111 +171,104 @@
                 </div>
             @endif
 
-            <!-- Tabel Data Pegawai -->
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr
-                            class="bg-gray-50/75 text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
-                            <th class="py-4 px-6 w-16">No</th>
-                            <th class="py-4 px-6">NIP / NIDN</th>
-                            <th class="py-4 px-6">Nama Lengkap</th>
-                            <th class="py-4 px-6">Jabatan / Pangkat</th>
-                            <th class="py-4 px-6">Jurusan / Prodi</th>
-                            <th class="py-4 px-6">Kontak</th>
-                            <th class="py-4 px-6 w-32 text-center">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-50 text-sm text-gray-600">
-                        <tr id="clientNoResultRow" class="hidden">
-                            <td colspan="7" class="text-center py-10 text-gray-400">
-                                <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-2">
-                                    <i class="fa-solid fa-magnifying-glass text-sm"></i>
-                                </div>
-                                <p class="font-bold text-gray-700 text-xs">Tidak ada hasil pada halaman ini</p>
-                                <p class="text-[11px] text-gray-400 mt-0.5">Tekan <strong>Enter</strong> atau klik <strong>Cari</strong> untuk mencari di seluruh database pegawai.</p>
-                            </td>
-                        </tr>
-                        @forelse($pegawais as $index => $pegawai)
-                            <tr class="pegawai-row hover:bg-emerald-50/30 transition duration-150 group">
-                                <td class="py-4 px-6 font-medium text-gray-500">{{ $pegawais->firstItem() + $index }}</td>
-                                <td class="py-4 px-6 font-bold text-gray-900">
-                                    {{ $pegawai->nip }}
-                                    @if ($pegawai->nidn)
-                                        <span class="block text-[11px] text-gray-400 font-normal">NIDN:
-                                            {{ $pegawai->nidn }}</span>
-                                    @endif
-                                </td>
-                                <td class="py-4 px-6 font-bold text-gray-900">
-                                    {{ $pegawai->nama }}
-                                    <span class="block text-[11px] text-emerald-700 font-semibold uppercase">Role:
-                                        {{ $pegawai->role }}</span>
-                                </td>
-                                <td class="py-4 px-6">
-                                    {{ $pegawai->jabatan ?? '-' }}
-                                    <span class="block text-[11px] text-gray-400">{{ $pegawai->pangkat ?? '' }}</span>
-                                </td>
-                                <td class="py-4 px-6">
-                                    {{ $pegawai->jurusan ?? '-' }}
-                                    <span class="block text-[11px] text-gray-400">Prodi:
-                                        {{ $pegawai->prodi ?? '-' }}</span>
-                                </td>
-                                <td class="py-4 px-6">
-                                    {{ $pegawai->email ?? '-' }}
-                                    <span class="block text-[11px] text-gray-400">HP: {{ $pegawai->hp ?? '-' }}</span>
-                                </td>
-                                <td class="py-4 px-6">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <button type="button" onclick='openEditModal(@json($pegawai))'
-                                            class="w-8 h-8 flex items-center justify-center rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition"
-                                            title="Edit">
-                                            <i class="fa-solid fa-pen text-xs"></i>
-                                        </button>
-                                        <button type="button"
-                                            onclick="openDeleteModal('{{ route('admin.master.pegawai.destroy', $pegawai->id) }}', @js($pegawai->nama))"
-                                            class="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
-                                            title="Hapus">
-                                            <i class="fa-solid fa-trash text-xs"></i>
-                                        </button>
-                                    </div>
-                                </td>
+            <div id="tableContainer" class="relative transition-opacity duration-200">
+                <!-- Tabel Data Pegawai -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr
+                                class="bg-gray-50/75 text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                                <th class="py-4 px-6 w-16">No</th>
+                                <th class="py-4 px-6">NIP / NIDN</th>
+                                <th class="py-4 px-6">Nama Lengkap</th>
+                                <th class="py-4 px-6">Jabatan / Pangkat</th>
+                                <th class="py-4 px-6">Jurusan / Prodi</th>
+                                <th class="py-4 px-6">Kontak</th>
+                                <th class="py-4 px-6 w-32 text-center">Aksi</th>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-12 text-gray-400">
-                                    <div
-                                        class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3">
-                                        <i class="fa-solid {{ request('search') || request('role') ? 'fa-magnifying-glass' : 'fa-users-slash' }} text-lg"></i>
-                                    </div>
-                                    @if(request('search') || request('role'))
-                                        <p class="font-bold text-gray-700 text-sm">Tidak ada data pegawai yang sesuai</p>
-                                        <p class="text-xs text-gray-400 mt-0.5">Tidak ditemukan data pegawai yang cocok dengan kriteria pencarian.</p>
-                                        <a href="{{ route('admin.master.pegawai') }}"
-                                            class="inline-flex items-center gap-1.5 mt-3 px-3.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-semibold transition">
-                                            <i class="fa-solid fa-rotate-left text-xs"></i> Reset Pencarian
-                                        </a>
-                                    @else
-                                        <p class="font-bold text-gray-700 text-sm">Belum ada data pegawai</p>
-                                        <p class="text-xs text-gray-400 mt-0.5">Silakan tambah manual atau import data pegawai
-                                            menggunakan file Excel.</p>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination Footer -->
-            <div
-                class="flex flex-col md:flex-row justify-between items-center px-6 py-4 bg-gray-50/50 border-t border-gray-100 text-xs text-gray-500 gap-4">
-                <div>
-                    Menampilkan <span class="font-semibold text-gray-700">{{ $pegawais->firstItem() ?? 0 }}</span> sampai
-                    <span class="font-semibold text-gray-700">{{ $pegawais->lastItem() ?? 0 }}</span> dari <span
-                        class="font-semibold text-gray-700">{{ $pegawais->total() }}</span> data
+                        </thead>
+                        <tbody class="divide-y divide-gray-50 text-sm text-gray-600">
+                            @forelse($pegawais as $index => $pegawai)
+                                <tr class="hover:bg-emerald-50/30 transition duration-150 group">
+                                    <td class="py-4 px-6 font-medium text-gray-500">{{ $pegawais->firstItem() + $index }}</td>
+                                    <td class="py-4 px-6 font-bold text-gray-900">
+                                        {{ $pegawai->nip }}
+                                        @if ($pegawai->nidn)
+                                            <span class="block text-[11px] text-gray-400 font-normal">NIDN:
+                                                {{ $pegawai->nidn }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-4 px-6 font-bold text-gray-900">
+                                        {{ $pegawai->nama }}
+                                        <span class="block text-[11px] text-emerald-700 font-semibold uppercase">Role:
+                                            {{ $pegawai->role }}</span>
+                                    </td>
+                                    <td class="py-4 px-6">
+                                        {{ $pegawai->jabatan ?? '-' }}
+                                        <span class="block text-[11px] text-gray-400">{{ $pegawai->pangkat ?? '' }}</span>
+                                    </td>
+                                    <td class="py-4 px-6">
+                                        {{ $pegawai->jurusan ?? '-' }}
+                                        <span class="block text-[11px] text-gray-400">Prodi:
+                                            {{ $pegawai->prodi ?? '-' }}</span>
+                                    </td>
+                                    <td class="py-4 px-6">
+                                        {{ $pegawai->email ?? '-' }}
+                                        <span class="block text-[11px] text-gray-400">HP: {{ $pegawai->hp ?? '-' }}</span>
+                                    </td>
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <button type="button" onclick='openEditModal(@json($pegawai))'
+                                                class="w-8 h-8 flex items-center justify-center rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition"
+                                                title="Edit">
+                                                <i class="fa-solid fa-pen text-xs"></i>
+                                            </button>
+                                            <button type="button"
+                                                onclick="openDeleteModal('{{ route('admin.master.pegawai.destroy', $pegawai->id) }}', @js($pegawai->nama))"
+                                                class="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
+                                                title="Hapus">
+                                                <i class="fa-solid fa-trash text-xs"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="text-center py-12 text-gray-400">
+                                        <div
+                                            class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3">
+                                            <i class="fa-solid {{ request('search') || request('role') ? 'fa-magnifying-glass' : 'fa-users-slash' }} text-lg"></i>
+                                        </div>
+                                        @if(request('search') || request('role'))
+                                            <p class="font-bold text-gray-700 text-sm">Tidak ada data pegawai yang sesuai</p>
+                                            <p class="text-xs text-gray-400 mt-0.5">Tidak ditemukan data pegawai yang cocok dengan kriteria pencarian.</p>
+                                            <button type="button" onclick="document.getElementById('btnResetSearch')?.click()"
+                                                class="inline-flex items-center gap-1.5 mt-3 px-3.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-semibold transition cursor-pointer">
+                                                <i class="fa-solid fa-rotate-left text-xs"></i> Reset Pencarian
+                                            </button>
+                                        @else
+                                            <p class="font-bold text-gray-700 text-sm">Belum ada data pegawai</p>
+                                            <p class="text-xs text-gray-400 mt-0.5">Silakan tambah manual atau import data pegawai
+                                                menggunakan file Excel.</p>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
-                <div class="pagination-modern">
-                    {{ $pegawais->onEachSide(1)->links('pagination::tailwind') }}
+
+                <!-- Pagination Footer -->
+                <div
+                    class="flex flex-col md:flex-row justify-between items-center px-6 py-4 bg-gray-50/50 border-t border-gray-100 text-xs text-gray-500 gap-4">
+                    <div>
+                        Menampilkan <span class="font-semibold text-gray-700">{{ $pegawais->firstItem() ?? 0 }}</span> sampai
+                        <span class="font-semibold text-gray-700">{{ $pegawais->lastItem() ?? 0 }}</span> dari <span
+                            class="font-semibold text-gray-700">{{ $pegawais->total() }}</span> data
+                    </div>
+                    <div class="pagination-modern">
+                        {{ $pegawais->onEachSide(1)->links('pagination::tailwind') }}
+                    </div>
                 </div>
             </div>
         </div>
@@ -571,33 +565,183 @@
             });
         @endif
 
-        // Real-time Live Filter pada baris tabel saat mengetik
+        // AJAX Real-time Search & Pagination Seluruh Database Pegawai
         const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            searchInput.addEventListener('input', function(e) {
-                const term = e.target.value.toLowerCase().trim();
-                const rows = document.querySelectorAll('.pegawai-row');
-                const clientNoResult = document.getElementById('clientNoResultRow');
-                let matchCount = 0;
+        const searchForm = document.getElementById('searchPegawaiForm');
+        const roleFilter = document.getElementById('roleFilter');
+        const clearBtn = document.getElementById('clearSearchBtn');
+        const btnReset = document.getElementById('btnResetSearch');
+        const searchIcon = document.getElementById('searchIcon');
+        const searchLoadingIcon = document.getElementById('searchLoadingIcon');
+        const tableContainer = document.getElementById('tableContainer');
+        const searchInfoContainer = document.getElementById('searchInfoContainer');
 
-                rows.forEach(row => {
-                    const text = row.innerText.toLowerCase();
-                    if (text.includes(term)) {
-                        row.style.display = '';
-                        matchCount++;
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
+        let debounceTimer = null;
+        let currentAbortController = null;
 
-                if (clientNoResult) {
-                    if (matchCount === 0 && rows.length > 0) {
-                        clientNoResult.classList.remove('hidden');
-                    } else {
-                        clientNoResult.classList.add('hidden');
-                    }
+        function showLoading() {
+            if (searchIcon) searchIcon.classList.add('hidden');
+            if (searchLoadingIcon) {
+                searchLoadingIcon.classList.remove('hidden');
+                searchLoadingIcon.classList.add('flex');
+            }
+            if (tableContainer) {
+                tableContainer.classList.add('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        function hideLoading() {
+            if (searchLoadingIcon) {
+                searchLoadingIcon.classList.remove('flex');
+                searchLoadingIcon.classList.add('hidden');
+            }
+            if (searchIcon) searchIcon.classList.remove('hidden');
+            if (tableContainer) {
+                tableContainer.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        function updateClearAndResetButtons() {
+            const hasSearch = searchInput && searchInput.value.trim().length > 0;
+            const hasRole = roleFilter && roleFilter.value.trim().length > 0;
+
+            if (clearBtn) {
+                if (hasSearch) {
+                    clearBtn.classList.remove('hidden');
+                } else {
+                    clearBtn.classList.add('hidden');
+                }
+            }
+
+            if (btnReset) {
+                if (hasSearch || hasRole) {
+                    btnReset.classList.remove('hidden');
+                } else {
+                    btnReset.classList.add('hidden');
+                }
+            }
+        }
+
+        function fetchPegawaiData(targetUrl) {
+            if (currentAbortController) {
+                currentAbortController.abort();
+            }
+            currentAbortController = new AbortController();
+
+            showLoading();
+
+            fetch(targetUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                signal: currentAbortController.signal
+            })
+            .then(res => res.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                const newTable = doc.getElementById('tableContainer');
+                if (newTable && tableContainer) {
+                    tableContainer.innerHTML = newTable.innerHTML;
+                }
+
+                const newInfo = doc.getElementById('searchInfoContainer');
+                if (newInfo && searchInfoContainer) {
+                    searchInfoContainer.innerHTML = newInfo.innerHTML;
+                }
+
+                window.history.pushState(null, '', targetUrl);
+                updateClearAndResetButtons();
+                hideLoading();
+            })
+            .catch(err => {
+                if (err.name !== 'AbortError') {
+                    console.error('Search error:', err);
+                    hideLoading();
                 }
             });
         }
+
+        function triggerSearch(page = 1) {
+            const searchVal = searchInput ? searchInput.value.trim() : '';
+            const roleVal = roleFilter ? roleFilter.value.trim() : '';
+
+            const params = new URLSearchParams();
+            if (searchVal) params.append('search', searchVal);
+            if (roleVal) params.append('role', roleVal);
+            if (page > 1) params.append('page', page);
+
+            const baseUrl = "{{ route('admin.master.pegawai') }}";
+            const finalUrl = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
+
+            fetchPegawaiData(finalUrl);
+        }
+
+        // Live input dengan debounce 350ms (mencari ke seluruh database)
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                updateClearAndResetButtons();
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    triggerSearch(1);
+                }, 350);
+            });
+        }
+
+        // Filter role change
+        if (roleFilter) {
+            roleFilter.addEventListener('change', function() {
+                clearTimeout(debounceTimer);
+                triggerSearch(1);
+            });
+        }
+
+        // Submit form (tekan tombol Cari atau tombol Enter)
+        if (searchForm) {
+            searchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                clearTimeout(debounceTimer);
+                triggerSearch(1);
+            });
+        }
+
+        // Klik tombol Clear 'x'
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                if (searchInput) searchInput.value = '';
+                clearTimeout(debounceTimer);
+                triggerSearch(1);
+                if (searchInput) searchInput.focus();
+            });
+        }
+
+        // Klik tombol Reset
+        if (btnReset) {
+            btnReset.addEventListener('click', function() {
+                if (searchInput) searchInput.value = '';
+                if (roleFilter) roleFilter.value = '';
+                clearTimeout(debounceTimer);
+                triggerSearch(1);
+            });
+        }
+
+        // Delegasi klik pagination agar tetap berjalan secara AJAX & tidak hilang pencariannya
+        document.addEventListener('click', function(e) {
+            const paginationLink = e.target.closest('.pagination-modern a');
+            if (paginationLink && tableContainer && tableContainer.contains(paginationLink)) {
+                e.preventDefault();
+                const targetUrl = paginationLink.getAttribute('href');
+                if (targetUrl) {
+                    fetchPegawaiData(targetUrl);
+                    tableContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        });
+
+        // Tangani navigasi back / forward di browser
+        window.addEventListener('popstate', function() {
+            window.location.reload();
+        });
     </script>
 @endsection
