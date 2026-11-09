@@ -156,7 +156,28 @@ class MasterDataController extends Controller
     // Menampilkan halaman manajemen user / data pegawai
     public function pegawaiIndex(Request $request)
     {
-        $pegawais = Pegawai::latest()->paginate(10);
+        $query = Pegawai::query();
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                  ->orWhere('nip', 'like', "%{$search}%")
+                  ->orWhere('nidn', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('jurusan', 'like', "%{$search}%")
+                  ->orWhere('prodi', 'like', "%{$search}%")
+                  ->orWhere('jabatan', 'like', "%{$search}%")
+                  ->orWhere('pangkat', 'like', "%{$search}%")
+                  ->orWhere('hp', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+
+        $pegawais = $query->latest()->paginate(10)->withQueryString();
         return view('Admin.master.pegawai', compact('pegawais'));
     }
 

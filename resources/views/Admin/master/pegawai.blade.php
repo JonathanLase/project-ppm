@@ -100,6 +100,68 @@
         <!-- Main Card Container -->
         <div class="bg-white rounded-2xl custom-card-shadow border border-gray-100 overflow-hidden">
 
+            <!-- Toolbar Pencarian & Filter Data Pegawai -->
+            <div class="p-5 border-b border-gray-100 bg-white">
+                <form method="GET" action="{{ route('admin.master.pegawai') }}" class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="flex flex-col sm:flex-row items-center gap-3 flex-1 w-full">
+                        <!-- Input Pencarian -->
+                        <div class="relative w-full sm:max-w-md">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400 pointer-events-none">
+                                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                            </span>
+                            <input type="text" name="search" id="searchInput" value="{{ request('search') }}"
+                                placeholder="Cari nama, NIP, NIDN, jurusan, atau prodi..."
+                                autocomplete="off"
+                                class="w-full pl-9 pr-9 py-2.5 text-xs border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:bg-white transition">
+                            @if(request('search'))
+                                <a href="{{ route('admin.master.pegawai', array_filter(['role' => request('role')])) }}"
+                                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition"
+                                    title="Hapus pencarian">
+                                    <i class="fa-solid fa-circle-xmark text-xs"></i>
+                                </a>
+                            @endif
+                        </div>
+
+                        <!-- Filter Role -->
+                        <div class="w-full sm:w-44">
+                            <select name="role" onchange="this.form.submit()"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-xs bg-gray-50/50 text-gray-700 font-medium focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:bg-white transition cursor-pointer">
+                                <option value="">Semua Role</option>
+                                <option value="dosen" {{ request('role') == 'dosen' ? 'selected' : '' }}>Dosen</option>
+                                <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                                <option value="petugas_ppm" {{ request('role') == 'petugas_ppm' ? 'selected' : '' }}>Petugas PPM</option>
+                            </select>
+                        </div>
+
+                        <!-- Tombol Submit & Reset -->
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <button type="submit"
+                                class="flex-1 sm:flex-initial px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
+                                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                                <span>Cari</span>
+                            </button>
+
+                            @if(request('search') || request('role'))
+                                <a href="{{ route('admin.master.pegawai') }}"
+                                    class="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium rounded-xl transition flex items-center justify-center gap-1.5"
+                                    title="Reset filter & pencarian">
+                                    <i class="fa-solid fa-rotate-left text-xs"></i>
+                                    <span>Reset</span>
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Informasi Hasil Pencarian -->
+                    @if(request('search') || request('role'))
+                        <div class="text-xs text-gray-500 bg-emerald-50/80 border border-emerald-100 px-3.5 py-2 rounded-xl flex items-center gap-2 self-start lg:self-auto">
+                            <i class="fa-solid fa-circle-info text-emerald-600 text-xs"></i>
+                            <span>Ditemukan <strong class="text-emerald-800 font-bold">{{ $pegawais->total() }}</strong> data</span>
+                        </div>
+                    @endif
+                </form>
+            </div>
+
             @if ($errors->any())
                 <div class="m-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold space-y-1">
                     @foreach ($errors->all() as $error)
@@ -124,8 +186,17 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50 text-sm text-gray-600">
+                        <tr id="clientNoResultRow" class="hidden">
+                            <td colspan="7" class="text-center py-10 text-gray-400">
+                                <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-2">
+                                    <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                                </div>
+                                <p class="font-bold text-gray-700 text-xs">Tidak ada hasil pada halaman ini</p>
+                                <p class="text-[11px] text-gray-400 mt-0.5">Tekan <strong>Enter</strong> atau klik <strong>Cari</strong> untuk mencari di seluruh database pegawai.</p>
+                            </td>
+                        </tr>
                         @forelse($pegawais as $index => $pegawai)
-                            <tr class="hover:bg-emerald-50/30 transition duration-150 group">
+                            <tr class="pegawai-row hover:bg-emerald-50/30 transition duration-150 group">
                                 <td class="py-4 px-6 font-medium text-gray-500">{{ $pegawais->firstItem() + $index }}</td>
                                 <td class="py-4 px-6 font-bold text-gray-900">
                                     {{ $pegawai->nip }}
@@ -173,11 +244,20 @@
                                 <td colspan="7" class="text-center py-12 text-gray-400">
                                     <div
                                         class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3">
-                                        <i class="fa-solid fa-users-slash text-lg"></i>
+                                        <i class="fa-solid {{ request('search') || request('role') ? 'fa-magnifying-glass' : 'fa-users-slash' }} text-lg"></i>
                                     </div>
-                                    <p class="font-bold text-gray-700 text-sm">Belum ada data pegawai</p>
-                                    <p class="text-xs text-gray-400 mt-0.5">Silakan tambah manual atau import data pegawai
-                                        menggunakan file Excel.</p>
+                                    @if(request('search') || request('role'))
+                                        <p class="font-bold text-gray-700 text-sm">Tidak ada data pegawai yang sesuai</p>
+                                        <p class="text-xs text-gray-400 mt-0.5">Tidak ditemukan data pegawai yang cocok dengan kriteria pencarian.</p>
+                                        <a href="{{ route('admin.master.pegawai') }}"
+                                            class="inline-flex items-center gap-1.5 mt-3 px-3.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-semibold transition">
+                                            <i class="fa-solid fa-rotate-left text-xs"></i> Reset Pencarian
+                                        </a>
+                                    @else
+                                        <p class="font-bold text-gray-700 text-sm">Belum ada data pegawai</p>
+                                        <p class="text-xs text-gray-400 mt-0.5">Silakan tambah manual atau import data pegawai
+                                            menggunakan file Excel.</p>
+                                    @endif
                                 </td>
                             </tr>
                         @endforelse
@@ -490,5 +570,34 @@
                 }
             });
         @endif
+
+        // Real-time Live Filter pada baris tabel saat mengetik
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', function(e) {
+                const term = e.target.value.toLowerCase().trim();
+                const rows = document.querySelectorAll('.pegawai-row');
+                const clientNoResult = document.getElementById('clientNoResultRow');
+                let matchCount = 0;
+
+                rows.forEach(row => {
+                    const text = row.innerText.toLowerCase();
+                    if (text.includes(term)) {
+                        row.style.display = '';
+                        matchCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                if (clientNoResult) {
+                    if (matchCount === 0 && rows.length > 0) {
+                        clientNoResult.classList.remove('hidden');
+                    } else {
+                        clientNoResult.classList.add('hidden');
+                    }
+                }
+            });
+        }
     </script>
 @endsection
