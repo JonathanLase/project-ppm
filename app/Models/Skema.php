@@ -19,4 +19,9 @@ class Skema extends Model
     {
         return $this->hasMany(Pengajuan::class);
     }
+
+    public function arsipSk()
+    {
+        return $this->hasMany(ArsipSk::class, 'skema_id');
+    }
 }

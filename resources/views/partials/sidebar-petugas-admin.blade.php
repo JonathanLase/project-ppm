@@ -72,6 +72,10 @@
             class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition {{ request()->routeIs('admin.validasi.laporan_hasil*') ? 'bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-950/40' : 'text-emerald-100/90 hover:bg-emerald-900/60 hover:text-white' }}">
             <i class="fa-solid fa-square-poll-vertical w-4 text-center"></i> Validasi Lap. Hasil
         </a>
+        <a href="{{ route('admin.arsip-sk.index') }}"
+            class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition {{ request()->routeIs('admin.arsip-sk.*') ? 'bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-950/40' : 'text-emerald-100/90 hover:bg-emerald-900/60 hover:text-white' }}">
+            <i class="fa-solid fa-file-shield w-4 text-center"></i> Arsip SK
+        </a>
 
         {{-- ── Divider ── --}}
         <div class="border-t border-emerald-800/50 my-1 mx-1 pt-2"></div>

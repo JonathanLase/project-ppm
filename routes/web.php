@@ -328,6 +328,20 @@ Route::middleware(['auth', 'role:dosen,petugas_ppm'])->group(function () {
         '/notifikasi/{id}/read',
         [\App\Http\Controllers\Dosen\NotificationController::class, 'markAsRead']
     )->name('notifikasi.read');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Arsip SK (Dosen & Petugas PPM)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/arsip-sk', [\App\Http\Controllers\ArsipSkController::class, 'index'])
+        ->name('arsip-sk.index');
+
+    Route::get('/arsip-sk/{id}/preview', [\App\Http\Controllers\ArsipSkController::class, 'preview'])
+        ->name('arsip-sk.preview');
+
+    Route::get('/arsip-sk/{id}/download', [\App\Http\Controllers\ArsipSkController::class, 'download'])
+        ->name('arsip-sk.download');
 });
 
 
@@ -704,6 +718,29 @@ Route::middleware(['auth', 'role:admin,petugas_ppm'])
         '/notifikasi/{id}/read',
         [NotificationController::class, 'markAsRead']
     )->name('notifikasi.read');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Arsip SK (Admin & Petugas PPM)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/arsip-sk', [\App\Http\Controllers\Admin\ArsipSkAdminController::class, 'index'])
+        ->name('arsip-sk.index');
+
+    Route::post('/arsip-sk', [\App\Http\Controllers\Admin\ArsipSkAdminController::class, 'store'])
+        ->name('arsip-sk.store');
+
+    Route::put('/arsip-sk/{id}', [\App\Http\Controllers\Admin\ArsipSkAdminController::class, 'update'])
+        ->name('arsip-sk.update');
+
+    Route::delete('/arsip-sk/{id}', [\App\Http\Controllers\Admin\ArsipSkAdminController::class, 'destroy'])
+        ->name('arsip-sk.destroy');
+
+    Route::get('/arsip-sk/{id}/preview', [\App\Http\Controllers\Admin\ArsipSkAdminController::class, 'preview'])
+        ->name('arsip-sk.preview');
+
+    Route::get('/arsip-sk/{id}/download', [\App\Http\Controllers\Admin\ArsipSkAdminController::class, 'download'])
+        ->name('arsip-sk.download');
 });
 
 

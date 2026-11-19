@@ -70,6 +70,10 @@
             href="{{ route('admin.validasi.laporan_hasil') }}">
             <span class="ic">📊</span>Validasi Lap. Hasil
         </a>
+        <a class="{{ request()->routeIs('admin.arsip-sk.*') || request()->routeIs('arsip-sk.*') ? 'active' : '' }}"
+            href="{{ route('admin.arsip-sk.index') }}">
+            <span class="ic">🗎</span>Arsip SK
+        </a>
 
         {{-- ── Divider ── --}}
         <div style="border-top:1px solid rgba(255,255,255,0.1);margin:6px 12px;"></div>

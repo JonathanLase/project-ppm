@@ -94,6 +94,7 @@
                 <a class="{{ request()->routeIs('riwayat') || request()->routeIs('pengajuan.detail') ? 'active' : '' }}" href="{{ route('riwayat') }}"><span class="ic">◷</span>Riwayat Pengajuan</a>
                 <a class="{{ request()->routeIs('laporan.kemajuan*') ? 'active' : '' }}" href="{{ route('laporan.kemajuan') }}"><span class="ic">▤</span>Laporan Kemajuan</a>
                 <a class="{{ request()->routeIs('laporan.*') && !request()->routeIs('laporan.kemajuan*') ? 'active' : '' }}" href="{{ route('laporan.index', 'hasil') }}"><span class="ic">▤</span>Laporan Hasil</a>
+                <a class="{{ request()->routeIs('arsip-sk.*') ? 'active' : '' }}" href="{{ route('arsip-sk.index') }}"><span class="ic">🗎</span>Arsip SK</a>
                 <a class="{{ request()->routeIs('notifikasi*') ? 'active' : '' }}" href="{{ route('notifikasi') }}"><span class="ic">🔔</span>Notifikasi</a>
                 <a class="{{ request()->routeIs('profil*') ? 'active' : '' }}" href="{{ route('profil') }}"><span class="ic">◈</span>Profil</a>
                 <a href="{{ route('ubah-password') }}" class="{{ request()->routeIs('ubah-password') ? 'active' : '' }}"><span class="ic">⚿</span>Ubah Password</a>
