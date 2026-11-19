@@ -52,9 +52,8 @@ class ArsipSkController extends Controller
         $years = array_values(array_unique(array_merge($availableYears, $defaultYears)));
         rsort($years);
 
-        // Daftar skema aktif untuk dropdown dinamis
-        $skemas = Skema::where('aktif', true)
-            ->orderBy('nama', 'asc')
+        // Daftar skema untuk dropdown dinamis (semua skema agar arsip tetap lengkap)
+        $skemas = Skema::orderBy('nama', 'asc')
             ->get(['id', 'nama', 'jenis', 'jalur']);
 
         return view('arsip-sk.index', [

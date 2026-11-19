@@ -53,8 +53,7 @@ class ArsipSkAdminController extends Controller
         $years = array_values(array_unique(array_merge($availableYears, $defaultYears)));
         rsort($years);
 
-        $skemas = Skema::where('aktif', true)
-            ->orderBy('nama', 'asc')
+        $skemas = Skema::orderBy('nama', 'asc')
             ->get(['id', 'nama', 'jenis', 'jalur']);
 
         return view('Admin.arsip-sk.index', [

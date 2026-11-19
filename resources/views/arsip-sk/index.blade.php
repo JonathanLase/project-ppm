@@ -466,8 +466,8 @@
             const selectedSkemaId = "{{ $filterSkema }}";
 
             function renderSkemaOptions() {
-                const jalurVal = selectJalur.value;
-                const jenisVal = selectJenis.value;
+                const jalurVal = (selectJalur.value || '').trim().toLowerCase();
+                const jenisVal = (selectJenis.value || '').trim().toLowerCase();
 
                 // Kosongkan opsi sebelumnya
                 selectSkema.innerHTML = '<option value="">-- Semua Skema --</option>';
@@ -476,17 +476,18 @@
                 let filtered = allSkemas;
 
                 if (jalurVal) {
-                    filtered = filtered.filter(item => item.jalur === jalurVal);
+                    filtered = filtered.filter(item => (item.jalur || '').trim().toLowerCase() === jalurVal);
                 }
 
                 if (jenisVal) {
-                    filtered = filtered.filter(item => item.jenis === jenisVal);
+                    filtered = filtered.filter(item => (item.jenis || '').trim().toLowerCase() === jenisVal);
                 }
 
                 filtered.forEach(function (skema) {
                     const opt = document.createElement('option');
                     opt.value = skema.id;
-                    opt.textContent = skema.nama + ' (' + skema.jalur.toUpperCase() + ')';
+                    const jalurLabel = skema.jalur ? ' (' + skema.jalur.toUpperCase() + ')' : '';
+                    opt.textContent = skema.nama + jalurLabel;
                     if (String(skema.id) === String(selectedSkemaId)) {
                         opt.selected = true;
                     }

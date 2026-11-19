@@ -425,19 +425,20 @@
         const currentFilterSkemaId = "{{ $filterSkema }}";
 
         function updateFilterSkemaDropdown() {
-            const jalurVal = filterJalur.value;
-            const jenisVal = filterJenis.value;
+            const jalurVal = (filterJalur.value || '').trim().toLowerCase();
+            const jenisVal = (filterJenis.value || '').trim().toLowerCase();
 
             filterSkema.innerHTML = '<option value="">Semua Skema</option>';
 
             let filtered = allSkemas;
-            if (jalurVal) filtered = filtered.filter(item => item.jalur === jalurVal);
-            if (jenisVal) filtered = filtered.filter(item => item.jenis === jenisVal);
+            if (jalurVal) filtered = filtered.filter(item => (item.jalur || '').trim().toLowerCase() === jalurVal);
+            if (jenisVal) filtered = filtered.filter(item => (item.jenis || '').trim().toLowerCase() === jenisVal);
 
             filtered.forEach(item => {
                 const opt = document.createElement('option');
                 opt.value = item.id;
-                opt.textContent = item.nama;
+                const jalurLabel = item.jalur ? ' (' + item.jalur.toUpperCase() + ')' : '';
+                opt.textContent = item.nama + jalurLabel;
                 if (String(item.id) === String(currentFilterSkemaId)) {
                     opt.selected = true;
                 }
@@ -458,19 +459,20 @@
         let formTargetSkemaId = null;
 
         function updateFormSkemaDropdown() {
-            const jalurVal = formJalur.value;
-            const jenisVal = formJenis.value;
+            const jalurVal = (formJalur.value || '').trim().toLowerCase();
+            const jenisVal = (formJenis.value || '').trim().toLowerCase();
 
             formSkema.innerHTML = '<option value="">-- Pilih Skema Kegiatan --</option>';
 
             let filtered = allSkemas;
-            if (jalurVal) filtered = filtered.filter(item => item.jalur === jalurVal);
-            if (jenisVal) filtered = filtered.filter(item => item.jenis === jenisVal);
+            if (jalurVal) filtered = filtered.filter(item => (item.jalur || '').trim().toLowerCase() === jalurVal);
+            if (jenisVal) filtered = filtered.filter(item => (item.jenis || '').trim().toLowerCase() === jenisVal);
 
             filtered.forEach(item => {
                 const opt = document.createElement('option');
                 opt.value = item.id;
-                opt.textContent = item.nama + ' (' + item.jalur.toUpperCase() + ')';
+                const jalurLabel = item.jalur ? ' (' + item.jalur.toUpperCase() + ')' : '';
+                opt.textContent = item.nama + jalurLabel;
                 if (String(item.id) === String(formTargetSkemaId)) {
                     opt.selected = true;
                 }
