@@ -174,22 +174,37 @@
                     <p class="text-slate-400 italic">Belum ada dokumen yang diunggah.</p>
                 @endif
             </div>
-            <!-- Dokumentasi Kegiatan (Foto) -->
+            <!-- Dokumen Pendukung (PDF atau Gambar) -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 space-y-3 text-xs">
                 <h3 class="font-extrabold text-slate-900 text-sm uppercase tracking-wide border-b border-slate-100 pb-3">
-                    Dokumentasi Kegiatan</h3>
+                    Dokumen Pendukung</h3>
                 @if (!empty($selected->dokumentasi))
-                    <div class="grid grid-cols-3 gap-3">
-                        @foreach ($selected->dokumentasi as $foto)
-                            <a href="{{ asset('storage/' . ($foto['path'] ?? '')) }}" target="_blank"
-                                class="block rounded-xl overflow-hidden border border-slate-100 aspect-square bg-slate-50">
-                                <img src="{{ asset('storage/' . ($foto['path'] ?? '')) }}"
-                                    alt="{{ $foto['nama'] ?? 'dokumentasi' }}" class="w-full h-full object-cover">
-                            </a>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        @foreach ($selected->dokumentasi as $dok)
+                            @php
+                                $ext = strtolower(pathinfo($dok['nama'] ?? ($dok['path'] ?? ''), PATHINFO_EXTENSION));
+                                $isPdf = ($ext === 'pdf');
+                            @endphp
+                            @if ($isPdf)
+                                <a href="{{ asset('storage/' . ($dok['path'] ?? '')) }}" target="_blank"
+                                    class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 aspect-square bg-slate-50 hover:bg-slate-100 transition text-center group">
+                                    <i class="fa-solid fa-file-pdf text-red-500 text-2xl mb-1.5 group-hover:scale-110 transition"></i>
+                                    <span class="text-[10px] text-slate-700 font-bold truncate max-w-full px-1" title="{{ $dok['nama'] ?? 'Dokumen PDF' }}">
+                                        {{ $dok['nama'] ?? 'Dokumen PDF' }}
+                                    </span>
+                                    <span class="text-[9px] text-emerald-700 font-semibold mt-1">Pratinjau PDF</span>
+                                </a>
+                            @else
+                                <a href="{{ asset('storage/' . ($dok['path'] ?? '')) }}" target="_blank"
+                                    class="block rounded-xl overflow-hidden border border-slate-100 aspect-square bg-slate-50 relative group">
+                                    <img src="{{ asset('storage/' . ($dok['path'] ?? '')) }}"
+                                        alt="{{ $dok['nama'] ?? 'dokumentasi' }}" class="w-full h-full object-cover group-hover:scale-105 transition">
+                                </a>
+                            @endif
                         @endforeach
                     </div>
                 @else
-                    <p class="text-slate-400">Belum ada foto dokumentasi yang diunggah.</p>
+                    <p class="text-slate-400">Belum ada dokumen pendukung yang diunggah.</p>
                 @endif
             </div>
         </div>

@@ -284,7 +284,7 @@
         <div class="card">
             <h3 style="margin-bottom:2px;">Daftar Kegiatan — Laporan Hasil</h3>
             <div class="sub" style="font-size:11.5px; color:var(--ink-500); margin-bottom:14px;">Kegiatan yang sudah
-                berada di tahap Laporan Hasil akan muncul di sini. Klik "Ajukan Laporan Hasil" untuk kegiatan yang
+                berada di tahap Laporan Hasil akan muncul di sini. Klik "Kirim Laporan Hasil" untuk kegiatan yang
                 belum pernah mengisi laporan.</div>
 
             @php $tahunTersedia = $daftarKegiatan->pluck('created_at')->map(fn($t) => $t->format('Y'))->unique()->sortDesc()->values(); @endphp
@@ -357,7 +357,7 @@
                                                     <line x1="5" y1="12" x2="19" y2="12">
                                                     </line>
                                                 </svg>
-                                                Ajukan Laporan
+                                                Kirim Laporan Hasil
                                             </a>
                                         @elseif ($laporan->status === 'draft')
                                             <a href="{{ route('laporan.form', ['hasil', $keg]) }}"

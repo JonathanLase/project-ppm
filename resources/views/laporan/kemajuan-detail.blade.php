@@ -65,13 +65,23 @@
             </div>
 
             <div class="field">
-                <label>Dokumentasi Kegiatan</label>
+                <label>Dokumen Pendukung</label>
                 @if (!empty($laporan->dokumentasi))
                     @foreach ($laporan->dokumentasi as $dok)
-                        <div class="file-chip" style="margin-bottom:6px;">🖼️ {{ $dok['nama'] ?? 'Dokumentasi' }}</div>
+                        @php
+                            $ext = strtolower(pathinfo($dok['nama'] ?? ($dok['path'] ?? ''), PATHINFO_EXTENSION));
+                            $isPdf = ($ext === 'pdf');
+                        @endphp
+                        <div class="file-chip" style="margin-bottom:6px;">
+                            @if ($isPdf) 📄 @else 🖼️ @endif
+                            <a href="{{ asset('storage/' . ($dok['path'] ?? '')) }}" target="_blank"
+                               style="color:var(--green-700); font-weight:700;">
+                                {{ $dok['nama'] ?? 'Dokumen Pendukung' }}
+                            </a>
+                        </div>
                     @endforeach
                 @else
-                    <div style="color:var(--ink-500); font-size:12.5px;">Tidak ada dokumentasi.</div>
+                    <div style="color:var(--ink-500); font-size:12.5px;">Tidak ada dokumen pendukung.</div>
                 @endif
             </div>
         </div>

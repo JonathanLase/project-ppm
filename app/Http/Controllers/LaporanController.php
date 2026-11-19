@@ -94,7 +94,7 @@ class LaporanController extends Controller
             'rencana_berikutnya' => 'nullable|string',
             'luaran_tercapai' => 'nullable|array',
             'file' => 'nullable|file|mimes:pdf|max:5120',
-            'dokumentasi.*' => 'nullable|image|max:5120',
+            'dokumentasi.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
         ];
         if ($isKirim) {
             $rules['file'] = LaporanKemajuan::where('pengajuan_id', $pengajuan->id)->whereNotNull('file_path')->exists()
@@ -119,6 +119,9 @@ class LaporanController extends Controller
         $laporan->catatan_validator = null;
 
         if ($request->hasFile('file')) {
+            if ($laporan->file_path && Storage::disk('public')->exists($laporan->file_path)) {
+                Storage::disk('public')->delete($laporan->file_path);
+            }
             $file = $request->file('file');
             $laporan->file_path = $file->store('laporan-kemajuan', 'public');
             $laporan->file_nama_asli = $file->getClientOriginalName();
@@ -475,6 +478,9 @@ class LaporanController extends Controller
         $laporan->catatan_validator = null;
 
         if ($request->hasFile('file')) {
+            if ($laporan->file_path && Storage::disk('public')->exists($laporan->file_path)) {
+                Storage::disk('public')->delete($laporan->file_path);
+            }
             $file = $request->file('file');
             $laporan->file_path = $file->store('laporan-hasil', 'public');
             $laporan->file_nama_asli = $file->getClientOriginalName();

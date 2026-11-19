@@ -540,7 +540,7 @@
             @unless ($readonly ?? false)
                 <div style="display:flex; justify-content:space-between; margin-top:20px;">
                     <button class="btn btn-primary" type="submit" form="formHasil" name="action" value="kirim">Kirim
-                        Laporan</button>
+                        Laporan Hasil</button>
                 </div>
             @endunless
         </div>

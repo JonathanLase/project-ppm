@@ -174,7 +174,7 @@
                         </div>
                         <div class="truncate">
                             <p class="font-bold text-slate-700 text-xs truncate">
-                                {{ basename($pengajuan->proposal_path ?? 'Dokumen_Proposal.pdf') }}
+                                Proposal-{{ $pengajuan->proposal_nama_asli ?: basename($pengajuan->proposal_path ?? 'Dokumen_Proposal.pdf') }}
                             </p>
                             <p class="text-[11px] text-slate-400">Format PDF siap diverifikasi</p>
                         </div>
@@ -185,7 +185,7 @@
                             class="px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition flex items-center gap-1.5 shadow-2xs">
                             <i class="fa-solid fa-eye text-slate-500"></i> Pratinjau
                         </a>
-                        <a href="{{ asset('storage/' . $pengajuan->proposal_path) }}" download
+                        <a href="{{ asset('storage/' . $pengajuan->proposal_path) }}" download="Proposal-{{ $pengajuan->proposal_nama_asli ?: basename($pengajuan->proposal_path ?? 'Dokumen_Proposal.pdf') }}"
                             class="px-3.5 py-2 text-xs font-bold text-white bg-emerald-800 rounded-xl hover:bg-emerald-900 transition flex items-center gap-1.5 shadow-sm">
                             <i class="fa-solid fa-download"></i> Unduh
                         </a>
@@ -206,13 +206,13 @@
                                 'label' => 'Kontrak',
                                 'path' => $pengajuan->kontrak_path,
                                 'nama' => $pengajuan->kontrak_nama_asli,
-                                'wajib' => true,
+                                'wajib' => false,
                             ],
                             [
                                 'label' => 'RAB (Rencana Anggaran Biaya)',
                                 'path' => $pengajuan->rab_path,
                                 'nama' => $pengajuan->rab_nama_asli,
-                                'wajib' => true,
+                                'wajib' => false,
                             ],
                         ];
                     @endphp
@@ -245,7 +245,7 @@
                                         class="px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition flex items-center gap-1.5 shadow-2xs">
                                         <i class="fa-solid fa-eye text-slate-500"></i> Pratinjau
                                     </a>
-                                    <a href="{{ asset('storage/' . $dok['path']) }}" download
+                                    <a href="{{ asset('storage/' . $dok['path']) }}" download="{{ $dok['nama'] ?: basename($dok['path']) }}"
                                         class="px-3.5 py-2 text-xs font-bold text-white bg-emerald-800 rounded-xl hover:bg-emerald-900 transition flex items-center gap-1.5 shadow-sm">
                                         <i class="fa-solid fa-download"></i> Unduh
                                     </a>

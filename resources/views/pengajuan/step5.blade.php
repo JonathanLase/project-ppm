@@ -128,10 +128,8 @@
             </div>
             <div class="s5-row"><span class="k">Proposal</span><span class="v">{{ $w['proposal_nama_asli'] }}
                     ({{ number_format($w['proposal_size'] / 1024, 0) }} KB)</span></div>
-            <div class="s5-row"><span class="k">Kontrak</span><span class="v">{{ $w['kontrak_nama_asli'] }}
-                    ({{ number_format($w['kontrak_size'] / 1024, 0) }} KB)</span></div>
-            <div class="s5-row"><span class="k">RAB</span><span class="v">{{ $w['rab_nama_asli'] }}
-                    ({{ number_format($w['rab_size'] / 1024, 0) }} KB)</span></div>
+            <div class="s5-row"><span class="k">Kontrak</span><span class="v">{{ $w['kontrak_nama_asli'] ? $w['kontrak_nama_asli'] . ' (' . number_format($w['kontrak_size'] / 1024, 0) . ' KB)' : '-' }}</span></div>
+            <div class="s5-row"><span class="k">RAB</span><span class="v">{{ $w['rab_nama_asli'] ? $w['rab_nama_asli'] . ' (' . number_format($w['rab_size'] / 1024, 0) . ' KB)' : '-' }}</span></div>
             <div class="s5-row"><span class="k">Total Biaya Usulan</span><span class="v">Rp
                     {{ number_format($w['total_biaya'], 0, ',', '.') }}</span></div>
         </div>

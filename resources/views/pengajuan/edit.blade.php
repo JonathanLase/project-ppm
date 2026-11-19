@@ -160,7 +160,7 @@
 
 <div class="card wizard-card">
     <div style="margin-bottom:16px;">
-        <h3 style="margin-bottom:2px;">Revisi Pengajuan</h3>
+        <h3 style="margin-bottom:2px;">{{ $pengajuan->status === 'revisi' ? 'Revisi Pengajuan' : 'Edit Pengajuan & Berkas' }}</h3>
         <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-500);">
             {{ $pengajuan->kode }}
         </div>
@@ -261,10 +261,51 @@
                 </span>
             </div>
             <div class="sub" style="margin:8px 0; font-size:11.5px; color:var(--ink-500);">
-                Unggah dokumen baru kalau proposal perlu diganti (opsional).
-                Dokumen lama tetap tersimpan, tidak akan dihapus.
+                Unggah dokumen baru kalau proposal perlu diganti (PDF, maks. 2MB).
             </div>
             <input type="file" name="proposal" accept="application/pdf">
+        </div>
+
+        <div class="field" style="margin-top:16px;">
+            <label>Dokumen Kontrak Saat Ini <span style="font-size:11px; color:#6b7280; font-weight:600;">(Opsional)</span></label>
+            @if ($pengajuan->kontrak_path)
+                <div class="file-chip">
+                    <span>
+                        📄 <a href="{{ asset('storage/' . $pengajuan->kontrak_path) }}" target="_blank"
+                             style="color:var(--green-700); font-weight:700;">
+                            {{ $pengajuan->kontrak_nama_asli }}
+                        </a>
+                        &middot; {{ number_format($pengajuan->kontrak_size / 1024, 0) }} KB
+                    </span>
+                </div>
+            @else
+                <div class="sub" style="margin-bottom:6px; font-size:12px; color:var(--ink-500);">Belum ada dokumen kontrak yang diunggah.</div>
+            @endif
+            <div class="sub" style="margin:8px 0; font-size:11.5px; color:var(--ink-500);">
+                Unggah dokumen kontrak baru atau ganti dokumen kontrak yang lama (PDF, maks. 2MB).
+            </div>
+            <input type="file" name="kontrak" accept="application/pdf">
+        </div>
+
+        <div class="field" style="margin-top:16px;">
+            <label>Dokumen RAB Saat Ini <span style="font-size:11px; color:#6b7280; font-weight:600;">(Opsional)</span></label>
+            @if ($pengajuan->rab_path)
+                <div class="file-chip">
+                    <span>
+                        📄 <a href="{{ asset('storage/' . $pengajuan->rab_path) }}" target="_blank"
+                             style="color:var(--green-700); font-weight:700;">
+                            {{ $pengajuan->rab_nama_asli }}
+                        </a>
+                        &middot; {{ number_format($pengajuan->rab_size / 1024, 0) }} KB
+                    </span>
+                </div>
+            @else
+                <div class="sub" style="margin-bottom:6px; font-size:12px; color:var(--ink-500);">Belum ada dokumen RAB yang diunggah.</div>
+            @endif
+            <div class="sub" style="margin:8px 0; font-size:11.5px; color:var(--ink-500);">
+                Unggah dokumen RAB baru atau ganti dokumen RAB yang lama (PDF, maks. 2MB).
+            </div>
+            <input type="file" name="rab" accept="application/pdf">
         </div>
 
         <div class="field">
@@ -276,13 +317,13 @@
         </div>
 
         <div class="alert-box alert-info">
-            ℹ️ Setelah dikirim ulang, status pengajuan kembali menjadi <b>Dalam Proses</b>
-            dan akan divalidasi ulang oleh admin.
+            ℹ️ Setelah disimpan, status pengajuan menjadi <b>Dalam Proses</b>
+            dan akan divalidasi oleh admin.
         </div>
 
         <div style="display:flex; justify-content:space-between; margin-top:20px;">
             <a href="{{ route('pengajuan.detail', $pengajuan) }}" class="btn btn-outline">Batal</a>
-            <button class="btn btn-primary" type="submit">Kirim Ulang Revisi</button>
+            <button class="btn btn-primary" type="submit">{{ $pengajuan->status === 'revisi' ? 'Kirim Ulang Revisi' : 'Simpan Perubahan' }}</button>
         </div>
     </form>
 </div>

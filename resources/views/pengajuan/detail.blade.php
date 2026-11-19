@@ -160,8 +160,10 @@
 
         <div style="display:flex; gap:10px;">
             <a href="{{ route('pengajuan.daftar') }}" class="btn btn-outline">← Kembali ke Daftar Pengajuan Proposal</a>
-            @if ($p->status === 'revisi' && $p->pegawai_id === auth()->id())
-                <a href="{{ route('pengajuan.edit', $p) }}" class="btn btn-primary">✎ Edit & Kirim Ulang Revisi</a>
+            @if (in_array($p->status, ['proses', 'revisi']) && $p->pegawai_id === auth()->id())
+                <a href="{{ route('pengajuan.edit', $p) }}" class="btn btn-primary">
+                    {{ $p->status === 'revisi' ? '✎ Edit & Kirim Ulang Revisi' : '✎ Edit Pengajuan & File' }}
+                </a>
             @endif
         </div>
     </div>

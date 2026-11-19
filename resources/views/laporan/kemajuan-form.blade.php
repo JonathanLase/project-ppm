@@ -61,20 +61,29 @@
                 </div>
 
                 <div class="field">
-                    <label>Dokumentasi Kegiatan (boleh lebih dari satu) <span
+                    <label>Dokumen Pendukung (boleh lebih dari satu) <span
                             style="color:#2563eb; font-weight:600; font-size:11.5px;">Opsional</span></label>
                     @if ($laporan && !empty($laporan->dokumentasi))
                         @foreach ($laporan->dokumentasi as $i => $dok)
+                            @php
+                                $ext = strtolower(pathinfo($dok['nama'] ?? ($dok['path'] ?? ''), PATHINFO_EXTENSION));
+                                $isPdf = ($ext === 'pdf');
+                            @endphp
                             <div class="file-chip"
                                 style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px;">
-                                <span>🖼 {{ $dok['nama'] ?? 'Dokumentasi ' . ($i + 1) }}</span>
+                                <span>
+                                    @if ($isPdf) 📄 @else 🖼️ @endif
+                                    <a href="{{ asset('storage/' . ($dok['path'] ?? '')) }}" target="_blank"
+                                        style="color:var(--green-700); font-weight:700;">{{ $dok['nama'] ?? 'Dokumen Pendukung ' . ($i + 1) }}</a>
+                                </span>
                                 <button type="button"
                                     onclick="hapusItem('{{ route('laporan.kemajuan.hapus-dokumentasi', [$pengajuan, $i]) }}')"
                                     style="border:1px solid #fca5a5; background:#fff; color:#dc2626; border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer; white-space:nowrap;">Hapus</button>
                             </div>
                         @endforeach
                     @endif
-                    <input type="file" name="dokumentasi[]" accept="image/*" multiple style="margin-top:8px;">
+                    <input type="file" name="dokumentasi[]" accept=".pdf,image/*,.jpg,.jpeg,.png,.webp" multiple style="margin-top:8px;">
+                    <div class="sub" style="margin-top:4px; font-size:11px; color:var(--ink-500);">Format file: Dokumen PDF atau Gambar (JPG, PNG), maks. 5 MB per file.</div>
                 </div>
             </div>
 
@@ -111,7 +120,7 @@
                     <div style="display:flex; gap:10px; margin-top:14px;">
 
                         <button type="submit" class="btn btn-primary"
-                            onclick="document.getElementById('actionInput').value='kirim'">Kirim Laporan</button>
+                            onclick="document.getElementById('actionInput').value='kirim'">Kirim Laporan Kemajuan</button>
                     </div>
                 </div>
             </div>

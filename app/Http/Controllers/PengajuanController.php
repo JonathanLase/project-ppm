@@ -233,12 +233,11 @@ class PengajuanController extends Controller
 
         $w = $this->wizard();
 
-        // Dokumen wajib: proposal, kontrak, RAB — wajib diisi jika belum
-        // pernah diunggah sebelumnya di sesi wizard ini (boleh dilewati ulang
-        // tanpa error kalau user hanya kembali edit field lain).
+        // Dokumen proposal wajib diisi jika belum pernah diunggah sebelumnya.
+        // Dokumen kontrak dan RAB bersifat opsional.
         $rules['proposal'] = $w['proposal_path'] ? 'nullable|file|mimes:pdf|max:2048' : 'required|file|mimes:pdf|max:2048';
-        $rules['kontrak'] = $w['kontrak_path'] ? 'nullable|file|mimes:pdf|max:2048' : 'required|file|mimes:pdf|max:2048';
-        $rules['rab'] = $w['rab_path'] ? 'nullable|file|mimes:pdf|max:2048' : 'required|file|mimes:pdf|max:2048';
+        $rules['kontrak'] = 'nullable|file|mimes:pdf|max:2048';
+        $rules['rab'] = 'nullable|file|mimes:pdf|max:2048';
 
         $data = $request->validate($rules);
 
@@ -354,8 +353,8 @@ class PengajuanController extends Controller
     {
         $w = $this->wizard();
 
-        if (!$w['jenis'] || !$w['skema_id'] || !$w['proposal_path'] || !$w['kontrak_path'] || !$w['rab_path']) {
-            return redirect()->route('pengajuan.step1')->with('error', 'Data pengajuan belum lengkap.');
+        if (!$w['jenis'] || !$w['skema_id'] || !$w['proposal_path']) {
+            return redirect()->route('pengajuan.step1')->with('error', 'Data pengajuan belum lengkap. Dokumen proposal wajib diunggah.');
         }
 
         $pengajuan = DB::transaction(function () use ($w) {
@@ -490,15 +489,15 @@ class PengajuanController extends Controller
         return redirect()->route('dashboard');
     }
 
-    /* ===================== EDIT PENGAJUAN (khusus status revisi) ===================== */
+    /* ===================== EDIT PENGAJUAN (status proses atau revisi) ===================== */
 
     public function edit(Pengajuan $pengajuan)
     {
         $user = Auth::user();
         abort_unless($pengajuan->pegawai_id === $user->id, 403);
 
-        if ($pengajuan->status !== 'revisi') {
-            return redirect()->route('pengajuan.detail', $pengajuan)->with('error', 'Pengajuan ini tidak sedang dalam status revisi.');
+        if (!in_array($pengajuan->status, ['proses', 'revisi'])) {
+            return redirect()->route('pengajuan.detail', $pengajuan)->with('error', 'Pengajuan ini tidak dapat diedit karena sudah disetujui.');
         }
 
         $pengajuan->load('tim');
@@ -522,14 +521,16 @@ class PengajuanController extends Controller
         $user = Auth::user();
         abort_unless($pengajuan->pegawai_id === $user->id, 403);
 
-        if ($pengajuan->status !== 'revisi') {
-            return redirect()->route('pengajuan.detail', $pengajuan)->with('error', 'Pengajuan ini tidak sedang dalam status revisi.');
+        if (!in_array($pengajuan->status, ['proses', 'revisi'])) {
+            return redirect()->route('pengajuan.detail', $pengajuan)->with('error', 'Pengajuan ini tidak dapat diedit karena sudah disetujui.');
         }
 
         $data = $request->validate([
             'judul' => 'required|string|max:255',
             'total_biaya' => 'required|numeric|min:0',
             'proposal' => 'nullable|file|mimes:pdf|max:2048',
+            'kontrak' => 'nullable|file|mimes:pdf|max:2048',
+            'rab' => 'nullable|file|mimes:pdf|max:2048',
             'tim' => 'nullable|array',
             'tim.*' => [
                 'exists:pegawais,id',
@@ -553,10 +554,33 @@ class PengajuanController extends Controller
             ];
 
             if ($request->hasFile('proposal')) {
+                if ($pengajuan->proposal_path && Storage::disk('public')->exists($pengajuan->proposal_path)) {
+                    Storage::disk('public')->delete($pengajuan->proposal_path);
+                }
                 $file = $request->file('proposal');
                 $update['proposal_path'] = $file->store('proposal', 'public');
                 $update['proposal_nama_asli'] = $file->getClientOriginalName();
                 $update['proposal_size'] = $file->getSize();
+            }
+
+            if ($request->hasFile('kontrak')) {
+                if ($pengajuan->kontrak_path && Storage::disk('public')->exists($pengajuan->kontrak_path)) {
+                    Storage::disk('public')->delete($pengajuan->kontrak_path);
+                }
+                $file = $request->file('kontrak');
+                $update['kontrak_path'] = $file->store('kontrak', 'public');
+                $update['kontrak_nama_asli'] = $file->getClientOriginalName();
+                $update['kontrak_size'] = $file->getSize();
+            }
+
+            if ($request->hasFile('rab')) {
+                if ($pengajuan->rab_path && Storage::disk('public')->exists($pengajuan->rab_path)) {
+                    Storage::disk('public')->delete($pengajuan->rab_path);
+                }
+                $file = $request->file('rab');
+                $update['rab_path'] = $file->store('rab', 'public');
+                $update['rab_nama_asli'] = $file->getClientOriginalName();
+                $update['rab_size'] = $file->getSize();
             }
 
             $pengajuan->update($update);
@@ -580,6 +604,6 @@ class PengajuanController extends Controller
             }
         });
 
-        return redirect()->route('pengajuan.detail', $pengajuan)->with('success', 'Revisi berhasil dikirim ulang dan menunggu validasi admin.');
+        return redirect()->route('pengajuan.detail', $pengajuan)->with('success', 'Data pengajuan dan berkas berhasil diperbarui.');
     }
 }

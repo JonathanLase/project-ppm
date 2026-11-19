@@ -385,14 +385,14 @@
                                             </svg>
                                             Detail
                                         </a>
-                                        @if ($p->status === 'revisi')
-                                            <a href="{{ route('pengajuan.edit', $p) }}" class="pp-btn pp-btn-warning">
+                                        @if (in_array($p->status, ['proses', 'revisi']))
+                                            <a href="{{ route('pengajuan.edit', $p) }}" class="pp-btn {{ $p->status === 'revisi' ? 'pp-btn-warning' : 'pp-btn-detail' }}" style="{{ $p->status === 'proses' ? 'color:#047857; border-color:#a7f3d0; background:#ecfdf5;' : '' }}">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                                     <path d="M12 20h9"></path>
                                                     <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
                                                 </svg>
-                                                Revisi
+                                                {{ $p->status === 'revisi' ? 'Revisi' : 'Edit' }}
                                             </a>
                                         @endif
                                     </div>

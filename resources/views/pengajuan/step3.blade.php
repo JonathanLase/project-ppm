@@ -211,10 +211,10 @@
                     <div class="upload-chip" id="chipProposal" style="display:none;"></div>
                 @endif
 
-                {{-- ===================== Dokumen Kontrak (WAJIB) ===================== --}}
+                {{-- ===================== Dokumen Kontrak (OPSIONAL) ===================== --}}
                 <div class="upload-field">
-                    <div class="upload-field-label">Dokumen Kontrak <span class="tag-wajib-field">WAJIB DIISI</span></div>
-                    <div class="upload-field-hint">Format PDF, ukuran maksimal 2 MB.</div>
+                    <div class="upload-field-label">Dokumen Kontrak <span class="tag-opsional-field" style="background:#f3f4f6; color:#4b5563; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:700; margin-left:6px;">OPSIONAL</span></div>
+                    <div class="upload-field-hint">Format PDF, ukuran maksimal 2 MB (opsional).</div>
 
                     <label for="kontrakInput" class="upload-box">
                         <span class="ub-icon">📄</span>
@@ -238,11 +238,10 @@
                     @endif
                 </div>
 
-                {{-- ===================== Dokumen RAB (WAJIB) ===================== --}}
+                {{-- ===================== Dokumen RAB (OPSIONAL) ===================== --}}
                 <div class="upload-field">
-                    <div class="upload-field-label">Dokumen RAB (Rencana Anggaran Biaya) <span class="tag-wajib-field">WAJIB
-                            DIISI</span></div>
-                    <div class="upload-field-hint">Format PDF, ukuran maksimal 2 MB.</div>
+                    <div class="upload-field-label">Dokumen RAB (Rencana Anggaran Biaya) <span class="tag-opsional-field" style="background:#f3f4f6; color:#4b5563; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:700; margin-left:6px;">OPSIONAL</span></div>
+                    <div class="upload-field-hint">Format PDF, ukuran maksimal 2 MB (opsional).</div>
 
                     <label for="rabInput" class="upload-box">
                         <span class="ub-icon">📄</span>
